@@ -22,25 +22,23 @@ const Home = () => {
                     />
                 </div>
                 <div className="relative z-10 p-8 md:p-12 lg:p-16 max-w-2xl">
-                    <span className="inline-block px-4 py-1 rounded-full bg-primary-600/90 text-white text-sm font-medium mb-6 backdrop-blur-sm">
-                        Winter Season Sale ❄️
-                    </span>
+                    
                     <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
-                        Discover the <br />
+                       {t("welcome")}
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-purple-400">
                             Ultimate Shopping
                         </span> <br />
-                        Experience
+                        {/* Experience */}
                     </h1>
                     <p className="text-lg text-gray-200 mb-8 max-w-lg">
-                        Explore hundreds of premium stores and thousands of products, all in one place.
-                    </p>
+                       {t("info")}             
+                                   </p>
                     <div className="flex flex-wrap gap-4">
                         <Button size="lg" className="rounded-full px-8">
-                            Shop Now
+                        {t("Shop Now")}
                         </Button>
                         <Button variant="outline" size="lg" className="rounded-full px-8 text-white border-white hover:bg-white/10 dark:text-white dark:border-white dark:hover:bg-white/10">
-                            View Stores
+                        {t("View Stores")}
                         </Button>
                     </div>
                 </div>
@@ -48,7 +46,7 @@ const Home = () => {
 
             {/* Categories Section */}
             <section>
-                <SectionHeader title="Shop by Category" />
+                <SectionHeader title={t("Shop by Category")}/>
                 <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
                     {categories.map((category) => (
                         <CategoryCard key={category.id} category={category} />
@@ -58,7 +56,7 @@ const Home = () => {
 
             {/* Featured Stores Section */}
             <section>
-                <SectionHeader title="Featured Stores" linkTo="/stores" />
+                <SectionHeader title={t("Featured Stores")} linkTo="/stores" />
                 {/* Horizontal Scroll Container */}
                 <div className="flex gap-6 overflow-x-auto pb-6 scrollbar-hide -mx-4 px-4 sm:mx-0 sm:px-0">
                     {stores.map((store) => (
@@ -73,7 +71,7 @@ const Home = () => {
 
             {/* Trending Products Section */}
             <section>
-                <SectionHeader title="Trending Products" linkTo="/products" />
+                <SectionHeader title={t("Trending Products")} linkTo="/products" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                     {products.map((product) => (
                         <ProductCard key={product.id} product={product} />
@@ -84,7 +82,7 @@ const Home = () => {
             {/* Brands Section */}
             <section className="bg-gray-50 dark:bg-gray-800/30 rounded-2xl p-8">
                 <h2 className="text-center text-xl font-bold text-gray-400 dark:text-gray-500 mb-8 uppercase tracking-widest">
-                    Trusted by Premium Brands
+                   {t("Premium Brands")}
                 </h2>
                 <div className="flex flex-wrap justify-center items-center gap-12 md:gap-20 opacity-60 hover:opacity-100 transition-opacity">
                     {brands.map((brand) => (

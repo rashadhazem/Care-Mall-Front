@@ -11,21 +11,21 @@ const Footer = () => {
                 <div className="flex flex-col md:flex-row justify-between items-center bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-6">
                     <div className="mb-4 md:mb-0">
                         <span className="text-xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
-                            Mall App
+                           CARE Mall 
                         </span>
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                            Your premium shopping destination.
+                            {t("info2")}
                         </p>
                     </div>
                     <div className="flex space-x-6 space-x-reverse text-sm text-gray-500 dark:text-gray-400">
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">About</a>
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">Privacy</a>
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">Terms</a>
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">Contact</a>
+                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("About")}</a>
+                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Privacy")}</a>
+                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Terms")}</a>
+                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Contact")}</a>
                     </div>
                 </div>
                 <div className="mt-8 text-center text-sm text-gray-400 dark:text-gray-500">
-                    &copy; {currentYear} Mall App. {t('rights')}.
+                    &copy; {currentYear}CARE Mall . {t('rights')}.
                 </div>
             </div>
         </footer>
