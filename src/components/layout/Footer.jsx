@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 
 const Footer = () => {
     const { t } = useTranslation();
@@ -18,10 +19,10 @@ const Footer = () => {
                         </p>
                     </div>
                     <div className="flex space-x-6 space-x-reverse text-sm text-gray-500 dark:text-gray-400">
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("About")}</a>
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Privacy")}</a>
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Terms")}</a>
-                        <a href="#" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Contact")}</a>
+                        <Link href="about" className="hover:text-primary-600 dark:hover:text-primary-400">{t("About")}</Link>
+                        <Link href="privacy" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Privacy")}</Link>
+                        <Link href="terms" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Terms")}</Link>
+                        <Link href="contact" className="hover:text-primary-600 dark:hover:text-primary-400">{t("Contact")}</Link>
                     </div>
                 </div>
                 <div className="mt-8 text-center text-sm text-gray-400 dark:text-gray-500">

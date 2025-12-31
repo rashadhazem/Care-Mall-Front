@@ -3,7 +3,8 @@ import { Routes, Route, Outlet } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
-
+import Contact  from './pages/contact';
+import About from './pages/about';
 // Auth Imports
 
 import Login from './pages/auth/Login';
@@ -66,6 +67,8 @@ function App() {
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="products/:id" element={<ProductDetailsPage />} />
                     <Route path="cart" element={<CartPage />} />
+                    <Route path="about" element={<About/>}/>
+                    <Route path="contact" element={<Contact/>}/>
 
                     {/*auth routes*/}
                     <Route path="/login" element={<div className="p-10 text-center"><Login /></div>} />
