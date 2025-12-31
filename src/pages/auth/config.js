@@ -5,7 +5,7 @@ import { initReactI18next } from 'react-i18next';
 const resources = {
     en: {
         translation: {
-            "welcome": "Welcome to CARE Mall",
+            "welcome": "Welcome to Mall App",
             "stores": "Stores",
             "cart": "Cart",
             "login": "Login",
@@ -13,21 +13,10 @@ const resources = {
             "language": "Language",
             "theme": "Theme",
             "rights": "All rights reserved.",
-            "info": "Explore hundreds of premium stores offering top-quality brands,and discover thousands of products designed to meet all your needs — all in one place.",
-            "Shop Now":"Shop Now",
-            "View Stores":"View Stores",
-            "Shop by Category":"Shop by Category",
-            "Featured Stores":"Featured Stores",
-            "Trending Products":"Trending Products",
-            "Premium Brands":"Trusted by Premium Brands",
-            "About":"About",
-            "Privacy":"Privacy",
-            "Terms":"Terms",
-            "Contact":"Contact",
-            "info2":"Your premium shopping destination.",
+            "login": "Login",
             "email": "Email",
             "password": "Password",
-           
+            "login": "Login",
             "signup": "Sign Up",
             "Don't have an account?": " Don't have an account?",
             "Forgot Password?":"Forgot Password?",
@@ -35,14 +24,14 @@ const resources = {
             "admin": "Admin",
             "user": "User",
             "vendor": "Vendor",
-            "Signing up...": "Signing up...",
-            
-            
+
+
+
         }
     },
     ar: {
         translation: {
-            "welcome": "مرحبًا بكم",
+            "welcome": "مرحباً بكم في تطبيق المول",
             "stores": "المتاجر",
             "cart": "عربة التسوق",
             "login": "تسجيل الدخول",
@@ -50,21 +39,10 @@ const resources = {
             "language": "اللغة",
             "theme": "المظهر",
             "rights": "جميع الحقوق محفوظة.",
-            "info":"استكشف مئات المتاجر المميزة اللي بتقدم أفضل الماركات واكتشف الاف المنتاجات اللى بتلبى احتياجاتك كل دة فى مكان واحد ",
-            "Shop Now":"تسوق الان",
-            "View Stores":"تصفّح المتاجر",
-            "Shop by Category":"اختر حسب الفئة",
-            "Featured Stores":"المتاجر المقترحة",
-            "Trending Products":"المنتجات الشائعة",
-            "Premium Brands":"موثوق بها من أفضل الماركات",
-            "About":"لمحة عنّا",
-            "Privacy":"الخصوصية",
-            "Terms":"الشروط",
-            "Contact":"تواصل معنا",
-            "info2":"وجهتك الأولى للتسوق المميز.",
-             "login": " تسجيل الدخول",
+            "login": " تسجيل الدخول",
             "email": "البريد الالكتروني",
             "password": "كلمة المرور",
+            "login": "دخول",
             "signup": "إنشاء حساب",
             "Don't have an account?": "ليس لديك حساب؟",
             "Forgot Password?":"نسيت كلمة المرور؟",
@@ -72,8 +50,6 @@ const resources = {
             "admin": "أدمن",
             "user": "مستخدم",
             "vendor": "بائع",
-            "Signing up...": "جاري إنشاء الحساب...",
-
         }
     }
 };

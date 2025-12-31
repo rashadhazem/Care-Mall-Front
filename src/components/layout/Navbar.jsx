@@ -5,12 +5,14 @@ import { toggleTheme } from '../../store/slices/themeSlice';
 import { setLanguage } from '../../store/slices/languageSlice';
 import Button from '../ui/Button';
 import { Moon, Sun, ShoppingCart, Menu, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Navbar = () => {
     const { t, i18n } = useTranslation();
     const dispatch = useDispatch();
     const { mode } = useSelector((state) => state.theme);
     const { code } = useSelector((state) => state.language);
+    const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
     const handleThemeToggle = () => {
         dispatch(toggleTheme());
@@ -28,8 +30,11 @@ const Navbar = () => {
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <div className="flex-shrink-0 flex items-center">
+                        <img src="/MallLogo.png" alt="CARE Mall Logo" className="h-24 w-24 " />
                         <span className="text-2xl font-bold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent">
-                           CARE Mall 
+                            <Link to="/">
+                                CARE Mall
+                            </Link>
                         </span>
                     </div>
 
@@ -49,21 +54,47 @@ const Navbar = () => {
                         <Button variant="ghost">
                             <ShoppingCart size={20} />
                         </Button>
-
-                        <Button variant="primary">
-                            {t('login')}
-                        </Button>
+                        <Link to="/login">
+                            <Button variant="primary">
+                                {t('login')}
+                            </Button>
+                        </Link>
                     </div>
 
                     {/* Mobile menu button */}
                     <div className="md:hidden">
-                        <Button variant="ghost">
+                        <Button variant="ghost" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                             <Menu size={24} />
                         </Button>
                     </div>
                 </div>
             </div>
-        </nav>
+
+            {/* Mobile Menu Overlay */}
+            {isMenuOpen && (
+                <div className="md:hidden px-4 pt-2 pb-4 space-y-2 bg-white dark:bg-gray-900 border-t dark:border-gray-800">
+                    <Button variant="ghost" className="w-full justify-start" onClick={handleLanguageToggle}>
+                        <Globe size={20} className="mr-2" />
+                        <span>{code === 'en' ? 'Arabic' : 'English'}</span>
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start" onClick={handleThemeToggle}>
+                        {mode === 'dark' ? <Sun size={20} className="mr-2" /> : <Moon size={20} className="mr-2" />}
+                        <span>Toggle Theme</span>
+                    </Button>
+                    <Link to="/cart" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="ghost" className="w-full justify-start">
+                            <ShoppingCart size={20} className="mr-2" />
+                            <span>Cart</span>
+                        </Button>
+                    </Link>
+                    <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                        <Button variant="primary" className="w-full justify-center mt-4">
+                            {t('login')}
+                        </Button>
+                    </Link>
+                </div>
+            )}
+        </nav >
     );
 };
 

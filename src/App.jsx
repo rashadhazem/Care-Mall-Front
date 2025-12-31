@@ -1,8 +1,43 @@
 import React from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer'; // Import Footer
+import Footer from './components/layout/Footer';
 import Home from './pages/Home';
+
+// Auth Imports
+
+import Login from './pages/auth/Login';
+import Signup from './pages/auth/Signup';
+import LoginOtp from './pages/auth/LoginOtp';
+import ForgotPassword from './pages/auth/ForgotPassword';
+
+
+
+// User Pages
+import StoresPage from './pages/StoresPage';
+import ProductsPage from './pages/ProductsPage';
+import ProductDetailsPage from './pages/ProductDetailsPage';
+import CartPage from './pages/CartPage';
+
+// Vendor Imports
+import VendorLayout from './components/layout/VendorLayout';
+import VendorDashboard from './pages/vendor/VendorDashboard';
+import VendorProducts from './pages/vendor/VendorProducts';
+import VendorOrders from './pages/vendor/VendorOrders';
+import VendorChat from './pages/vendor/VendorChat';
+import ChatWindow from './components/chat/ChatWindow';
+import NotFoundPage from './pages/NotFoundPage';
+
+// Admin Imports
+import AdminLayout from './components/layout/AdminLayout';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminStores from './pages/admin/AdminStores';
+import AdminProducts from './pages/admin/AdminProducts';
+import AdminCategories from './pages/admin/AdminCategories';
+import AdminUsers from './pages/admin/AdminUsers';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import { Helmet } from 'react-helmet-async';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 
 // Layout Component
 const Layout = () => {
@@ -13,21 +48,59 @@ const Layout = () => {
                 <Outlet />
             </main>
             <Footer />
+            <ChatWindow />
         </div>
     );
 };
 
 function App() {
     return (
-        <Routes>
-            <Route path="/" element={<Layout />}>
-                <Route index element={<Home />} />
-                <Route path="stores" element={<div className="p-10 text-center">Stores Page (Coming Soon)</div>} />
-                <Route path="products" element={<div className="p-10 text-center">Products Page (Coming Soon)</div>} />
-                {/* Catch all */}
-                <Route path="*" element={<div className="p-20 text-center text-red-500">404 - Page Not Found</div>} />
-            </Route>
-        </Routes>
+        <ErrorBoundary>
+
+            <Routes>
+
+                {/* Public Routes */}
+                <Route path="/" element={<Layout />}>
+                    <Route index element={<Home />} />
+                    <Route path="stores" element={<StoresPage />} />
+                    <Route path="products" element={<ProductsPage />} />
+                    <Route path="products/:id" element={<ProductDetailsPage />} />
+                    <Route path="cart" element={<CartPage />} />
+
+                    {/*auth routes*/}
+                    <Route path="/login" element={<div className="p-10 text-center"><Login /></div>} />
+                    <Route path="/signup" element={<div className="p-10 text-center"><Signup /></div>} />
+                    <Route path="/login-otp" element={<div className="p-10 text-center"><LoginOtp /></div>} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<div className="p-10 text-center">Reset Password Page (Coming Soon)</div>} />
+                    {/* Catch all */}
+                    <Route path="*" element={<NotFoundPage />} />
+                </Route>
+
+                {/* Vendor Routes */}
+                <Route path="/vendor" element={<ProtectedRoute allowedRoles={['vendor']} />}>
+                    <Route element={<VendorLayout />}>
+                        <Route index element={<VendorDashboard />} />
+                        <Route path="dashboard" element={<VendorDashboard />} />
+                        <Route path="products" element={<VendorProducts />} />
+                        <Route path="orders" element={<VendorOrders />} />
+                        <Route path="chat" element={<VendorChat />} />
+                    </Route>
+                </Route>
+
+                {/* Admin Routes */}
+                <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']} />}>
+                    <Route element={<AdminLayout />}>
+                        <Route index element={<AdminDashboard />} />
+                        <Route path="dashboard" element={<AdminDashboard />} />
+                        <Route path="stores" element={<AdminStores />} />
+                        <Route path="products" element={<AdminProducts />} />
+                        <Route path="categories" element={<AdminCategories />} />
+                        <Route path="users" element={<AdminUsers />} />
+                    </Route>
+                </Route>
+            </Routes>
+        </ErrorBoundary>
     );
 }
 
