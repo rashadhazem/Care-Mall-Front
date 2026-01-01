@@ -1,92 +1,235 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import AdminTable from '../../components/admin/AdminTable';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import { Search, Filter, Edit, Trash2, Plus } from 'lucide-react';
 import Swal from 'sweetalert2';
+import { productsApi } from '../../lib/api';
+import { useTranslation } from 'react-i18next';
 
 const VendorProducts = () => {
-    // Mock initial state
-    const [products, setProducts] = useState([
-        { id: 1, name: 'Product A', price: 50, stock: 100, category: 'Electronics' },
-        { id: 2, name: 'Product B', price: 30, stock: 50, category: 'Fashion' },
-        { id: 3, name: 'Product C', price: 20, stock: 200, category: 'Home' },
-    ]);
+    const { t } = useTranslation();
+    const [products, setProducts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState(null);
+    const [formData, setFormData] = useState({ title: '', price: '', imageCover: '', category: '', stock: '' });
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+
+    const fetchProducts = async (page = 1) => {
+        setLoading(true);
+        try {
+            const res = await productsApi.getProducts(page);
+            setProducts(res.data.data || []);
+
+            if (res.data.paginationResult) {
+                setTotalPages(res.data.paginationResult.numberOfPages || 1);
+                setCurrentPage(res.data.paginationResult.currentPage || page);
+            } else {
+                setTotalPages(1);
+            }
+
+        } catch (error) {
+            console.error("Error fetching products:", error);
+            Swal.fire(t('error'), t('failed_to_fetch_products'), 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchProducts(currentPage);
+    }, [currentPage]);
+
+    const handleOpenModal = (product = null) => {
+        if (product) {
+            setEditingProduct(product);
+            setFormData({
+                title: product.title,
+                price: product.price,
+                imageCover: product.imageCover || '',
+                category: product.category._id || product.category,
+                stock: product.stock || 0
+            });
+        } else {
+            setEditingProduct(null);
+            setFormData({ title: '', price: '', imageCover: '', category: '', stock: '' });
+        }
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setEditingProduct(null);
+        setFormData({ title: '', price: '', imageCover: '', category: '', stock: '' });
+    };
+
+    const handleSave = async () => {
+        if (!formData.title) {
+            Swal.fire(t('error'), t('title_required'), 'error');
+            return;
+        }
+
+        const fd = new FormData();
+        fd.append('title', formData.title);
+        fd.append('price', formData.price);
+        fd.append('category', formData.category);
+        fd.append('stock', formData.stock);
+        if (formData.imageCover instanceof File) {
+            fd.append('imageCover', formData.imageCover);
+        }
+
+        try {
+            if (editingProduct) {
+                await productsApi.updateProduct(editingProduct._id, fd);
+                Swal.fire(t('updated'), t('product_updated_success'), 'success');
+            } else {
+                await productsApi.createProduct(fd);
+                Swal.fire(t('created'), t('product_created_success'), 'success');
+            }
+            handleCloseModal();
+            fetchProducts(currentPage);
+        } catch (error) {
+            console.error("Error saving product:", error);
+            Swal.fire(t('error'), t('failed_to_save_product'), 'error');
+        }
+    };
 
     const handleDelete = (id) => {
         Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
+            title: t('confirm_delete'),
+            text: t('confirm_delete_text'),
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: t('yes_delete'),
+            cancelButtonText: t('cancel')
+        }).then(async (result) => {
             if (result.isConfirmed) {
-                setProducts(products.filter(p => p.id !== id));
-                Swal.fire('Deleted!', 'Your product has been deleted.', 'success');
+                try {
+                    await productsApi.deleteProduct(id);
+                    setProducts(prev => prev.filter(p => p._id !== id));
+                    Swal.fire(t('deleted'), t('product_deleted_success'), 'success');
+                } catch (error) {
+                    console.error("Error deleting product:", error);
+                    Swal.fire(t('error'), t('failed_to_delete_product'), 'error');
+                }
             }
         });
     };
 
-    return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-bold dark:text-white">Product Management</h1>
-                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
-                    <Plus className="w-4 h-4" /> Add Product
-                </button>
-            </div>
-
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden">
-                <div className="p-4 border-b dark:border-gray-700 flex gap-4">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search products..."
-                            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
-                        />
+    const columns = [
+        {
+            header: t('product_title'), accessor: 'title', render: (p) => (
+                <div className="flex items-center gap-3">
+                    <img src={p.imageCover_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                    <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{p.title}</p>
+                        <p className="text-xs text-gray-500">{p.category?.name || p.category}</p>
                     </div>
                 </div>
+            )
+        },
+        { header: t('price'), accessor: 'price', render: (p) => `$${p.price}` },
+        { header: t('stock'), accessor: 'stock', render: (p) => p.stock },
+    ];
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
-                        <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-700 dark:text-gray-300 font-semibold">
-                            <tr>
-                                <th className="px-6 py-3">Product Name</th>
-                                <th className="px-6 py-3">Category</th>
-                                <th className="px-6 py-3">Price</th>
-                                <th className="px-6 py-3">Stock</th>
-                                <th className="px-6 py-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                            {products.map((product) => (
-                                <tr key={product.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                                    <td className="px-6 py-4 font-medium text-gray-900 dark:text-white">{product.name}</td>
-                                    <td className="px-6 py-4">{product.category}</td>
-                                    <td className="px-6 py-4">${product.price}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${product.stock > 50 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                                            {product.stock}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right space-x-2">
-                                        <button className="text-blue-500 hover:text-blue-700">
-                                            <Edit className="w-4 h-4" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(product.id)}
-                                            className="text-red-500 hover:text-red-700"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+    const actions = (product) => (
+        <>
+            <Button variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50" onClick={() => handleOpenModal(product)} title={t('edit')}>
+                <Edit size={18} />
+            </Button>
+            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(product._id)} title={t('delete')}>
+                <Trash2 size={18} />
+            </Button>
+        </>
+    );
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('products_management')}</h1>
+                <div className="flex gap-2">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder={t('search_products_placeholder')}
+                            className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none"
+                        />
+                    </div>
+                    <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
+                        <Plus size={20} />
+                        {t('add_product')}
+                    </Button>
                 </div>
             </div>
+
+            <AdminTable
+                columns={columns}
+                data={products}
+                actions={actions}
+                isLoading={loading}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+            />
+
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                title={editingProduct ? t('edit_product') : t('add_product')}
+                footer={
+                    <>
+                        <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
+                        <Button onClick={handleSave}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <Input
+                        label={t('product_name')}
+                        placeholder={t('product_name_placeholder')}
+                        value={formData.title}
+                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    />
+                    <div className="flex gap-4">
+                        <Input
+                            label={t('price')}
+                            type="number"
+                            placeholder="0.00"
+                            className="flex-1"
+                            value={formData.price}
+                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        />
+                        <Input
+                            label={t('stock')}
+                            type="number"
+                            placeholder="0"
+                            className="flex-1"
+                            value={formData.stock}
+                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
+                        />
+                    </div>
+                    <Input
+                        label={t('category')}
+                        placeholder={t('category_placeholder')}
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    />
+                    <Input
+                        label={t('image')}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setFormData({ ...formData, imageCover: e.target.files[0] })}
+                    />
+                </div>
+            </Modal>
         </div>
     );
 };

@@ -1,26 +1,51 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { DollarSign, ShoppingBag, Package, TrendingUp } from 'lucide-react';
 import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import PageWrapper from '../../components/ui/PageWrapper';
+import { productsApi } from '../../lib/api';
+import { useTranslation } from 'react-i18next';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
 const VendorDashboard = () => {
-    // Mock Data
-    const stats = [
-        { label: 'Total Sales', value: '$12,450', icon: DollarSign, color: 'bg-green-100 text-green-600' },
-        { label: 'Total Orders', value: '1,240', icon: ShoppingBag, color: 'bg-blue-100 text-blue-600' },
-        { label: 'Products', value: '45', icon: Package, color: 'bg-purple-100 text-purple-600' },
-        { label: 'Growth', value: '+15%', icon: TrendingUp, color: 'bg-yellow-100 text-yellow-600' },
-    ];
+    const { t } = useTranslation();
+    const [stats, setStats] = useState([
+        { label: 'Total Sales', value: '$0', icon: DollarSign, color: 'bg-green-100 text-green-600' },
+        { label: 'Total Orders', value: '0', icon: ShoppingBag, color: 'bg-blue-100 text-blue-600' },
+        { label: 'Products', value: '0', icon: Package, color: 'bg-purple-100 text-purple-600' },
+        { label: 'Growth', value: '0%', icon: TrendingUp, color: 'bg-yellow-100 text-yellow-600' },
+    ]);
+
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                // Fetch Products Count
+                const productsRes = await productsApi.getProducts();
+                const productsCount = productsRes.data.data?.length || 0;
+
+                // Update Stats
+                setStats(prev => [
+                    { ...prev[0], label: t('total_sales') },
+                    { ...prev[1], label: t('total_orders') },
+                    { ...prev[2], value: productsCount.toString(), label: t('products') },
+                    { ...prev[3], label: t('growth') }
+                ]);
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            }
+        };
+
+        fetchDashboardData();
+    }, [t]);
 
     const chartData = {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         datasets: [
             {
-                label: 'Sales ($)',
-                data: [3000, 4500, 4000, 6000, 5500, 8000],
+                label: t('sales'),
+                data: [0, 0, 0, 0, 0, 0], // Placeholder data
                 borderColor: 'rgb(59, 130, 246)',
                 backgroundColor: 'rgba(59, 130, 246, 0.5)',
             },
@@ -31,13 +56,13 @@ const VendorDashboard = () => {
         responsive: true,
         plugins: {
             legend: { position: 'top' },
-            title: { display: true, text: 'Monthly Sales Performance' },
+            title: { display: true, text: t('monthly_sales_performance') },
         },
     };
 
     return (
         <PageWrapper className="space-y-6">
-            <h1 className="text-2xl font-bold dark:text-white">Vendor Dashboard</h1>
+            <h1 className="text-2xl font-bold dark:text-white">{t('vendor_dashboard')}</h1>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

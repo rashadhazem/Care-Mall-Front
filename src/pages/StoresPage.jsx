@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/ui/PageWrapper';
 import { Link } from 'react-router-dom';
-import { categories } from '../lib/fakeData';
 import { storesApi, categoriesApi } from '../lib/api';
 import { showToast } from '../lib/toast';
 import { Search, Star, MapPin } from 'lucide-react';
@@ -14,7 +13,7 @@ const StoresPage = () => {
     const [stores, setStores] = useState([]);
     const [filteredStores, setFilteredStores] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [categoriesList, setCategoriesList] = useState(categories);
+    const [categoriesList, setCategoriesList] = useState([]);
 
     useEffect(() => {
         fetchStores();

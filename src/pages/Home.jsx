@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { categories, stores, products, brands } from '../lib/fakeData';
+import { categoriesApi, storesApi, productsApi, brandsApi } from '../lib/api';
 import CategoryCard from '../components/categories/CategoryCard';
 import SectionHeader from '../components/common/SectionHeader';
 import StoreCard from '../components/stores/StoreCard';
@@ -10,6 +10,30 @@ import Button from '../components/ui/Button';
 
 const Home = () => {
     const { t } = useTranslation();
+    const [categories, setCategories] = useState([]);
+    const [stores, setStores] = useState([]);
+    const [products, setProducts] = useState([]);
+    const [brands, setBrands] = useState([]);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [categoriesRes, storesRes, productsRes, brandsRes] = await Promise.all([
+                    categoriesApi.getCategories(),
+                    storesApi.getStores(),
+                    productsApi.getProducts(),
+                    brandsApi.getBrands()
+                ]);
+                setCategories(categoriesRes.data.data || []);
+                setStores(storesRes.data.data || []);
+                setProducts(productsRes.data.data || []);
+                setBrands(brandsRes.data.data || []);
+            } catch (error) {
+                console.error("Error fetching home data:", error);
+            }
+        };
+        fetchData();
+    }, []);
 
     return (
         <div className="space-y-16 pb-12">

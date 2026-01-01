@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/ui/PageWrapper';
-import { categories } from '../lib/fakeData';
 import { productsApi, categoriesApi } from '../lib/api';
 import { showToast } from '../lib/toast';
 import ProductCard from '../components/products/ProductCard';
@@ -15,7 +14,7 @@ const ProductsPage = () => {
     const [products, setProducts] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [categoriesList, setCategoriesList] = useState(categories);
+    const [categoriesList, setCategoriesList] = useState([]);
 
     // Fetch products on mount
     useEffect(() => {

@@ -3,10 +3,21 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } from 'chart.js';
 import { Users, DollarSign, ShoppingBag, Activity } from 'lucide-react';
 import PageWrapper from '../../components/ui/PageWrapper';
+import { useTranslation } from 'react-i18next';
+import { Globe } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 const AdminDashboard = () => {
+    const { t, i18n } = useTranslation();
+
+    const toggleLanguage = () => {
+        const newLang = i18n.language === 'en' ? 'ar' : 'en';
+        i18n.changeLanguage(newLang);
+        localStorage.setItem('language', newLang);
+        document.dir = newLang === 'ar' ? 'rtl' : 'ltr';
+    };
+
     // Mock Data
     const stats = [
         { label: 'Total Revenue', value: '$45,231', icon: DollarSign, color: 'bg-green-100 text-green-600' },
@@ -14,6 +25,7 @@ const AdminDashboard = () => {
         { label: 'Orders Today', value: '145', icon: ShoppingBag, color: 'bg-purple-100 text-purple-600' },
         { label: 'System Health', value: '98%', icon: Activity, color: 'bg-yellow-100 text-yellow-600' },
     ];
+    // ... stats logic ...
 
     const revenueData = {
         labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
@@ -48,7 +60,16 @@ const AdminDashboard = () => {
 
     return (
         <PageWrapper className="space-y-6">
-            <h1 className="text-2xl font-bold dark:text-white">Admin Dashboard</h1>
+            <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-bold dark:text-white">{t('dashboard')}</h1>
+                <button
+                    onClick={toggleLanguage}
+                    className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
+                >
+                    <Globe size={20} className="text-gray-500" />
+                    <span className="text-sm font-medium">{i18n.language === 'en' ? 'العربية' : 'English'}</span>
+                </button>
+            </div>
 
             {/* Stats Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

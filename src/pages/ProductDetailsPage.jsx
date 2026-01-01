@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
-import { products, stores } from '../lib/fakeData';
+import { productsApi } from '../lib/api';
 import { Star, ShoppingCart, ArrowLeft, Truck, ShieldCheck, Heart } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/ui/PageWrapper';
@@ -12,8 +12,33 @@ import { Helmet } from 'react-helmet-async';
 const ProductDetailsPage = () => {
     const { id } = useParams();
     const dispatch = useDispatch();
-    const product = products.find(p => p.id === Number(id));
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
+
+    useEffect(() => {
+        const fetchProduct = async () => {
+            try {
+                setLoading(true);
+                const response = await productsApi.getProductById(id);
+                setProduct(response.data.data || response.data);
+            } catch (error) {
+                console.error("Error fetching product details:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchProduct();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <p className="mt-4 text-gray-600 dark:text-gray-400">Loading product details...</p>
+            </div>
+        );
+    }
 
     if (!product) {
         return (
@@ -29,7 +54,7 @@ const ProductDetailsPage = () => {
         Swal.fire({
             icon: 'success',
             title: 'Added to Cart!',
-            text: `${product.name} has been added to your cart.`,
+            text: `${product.title || product.name} has been added to your cart.`,
             showConfirmButton: false,
             timer: 1500,
             background: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff',
@@ -40,8 +65,8 @@ const ProductDetailsPage = () => {
     return (
         <PageWrapper className="max-w-7xl mx-auto px-4 py-8">
             <Helmet>
-                <title>{product.name} | Mall App</title>
-                <meta name="description" content={`Buy ${product.name} at the best price from ${product.store}.`} />
+                <title>{product.title || product.name} | Mall App</title>
+                <meta name="description" content={`Buy ${product.title || product.name} at the best price from ${product.store?.name || product.store}.`} />
             </Helmet>
             <Link to="/products" className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 mb-6 transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -58,8 +83,8 @@ const ProductDetailsPage = () => {
                         className="p-6 md:p-8 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center"
                     >
                         <img
-                            src={product.image}
-                            alt={product.name}
+                            src={product.imageCover || product.image}
+                            alt={product.title || product.name}
                             className="w-full max-w-md object-contain rounded-2xl hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
                         />
                     </motion.div>
@@ -73,8 +98,8 @@ const ProductDetailsPage = () => {
                     >
                         <div className="flex justify-between items-start">
                             <div>
-                                <p className="text-sm font-semibold text-blue-500 tracking-wide uppercase">{product.store}</p>
-                                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-1 mb-2">{product.name}</h1>
+                                <p className="text-sm font-semibold text-blue-500 tracking-wide uppercase">{product.store?.name || product.store}</p>
+                                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-1 mb-2">{product.title || product.name}</h1>
                             </div>
                             <button className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 transition-colors">
                                 <Heart className="w-6 h-6" />
@@ -98,9 +123,7 @@ const ProductDetailsPage = () => {
                         </div>
 
                         <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                            Experience premium quality with our {product.name.toLowerCase()}.
-                            Designed for comfort and style, this item is perfect for your daily needs.
-                            Available now at {product.store}.
+                            {product.description || `Experience premium quality with our ${(product.title || product.name).toLowerCase()}. Designed for comfort and style, this item is perfect for your daily needs. Available now at ${product.store?.name || product.store}.`}
                         </p>
 
                         <div className="space-y-4 mb-8">

@@ -2,7 +2,7 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import Button from '../ui/Button';
 
-const AdminTable = ({ columns, data, actions, onAction, isLoading }) => {
+const AdminTable = ({ columns, data, actions, onAction, isLoading, currentPage, totalPages, onPageChange }) => {
     if (isLoading) {
         return <div className="p-8 text-center text-gray-500">Loading...</div>;
     }
@@ -46,14 +46,32 @@ const AdminTable = ({ columns, data, actions, onAction, isLoading }) => {
                 </table>
             </div>
 
-            {/* Pagination Placeholder */}
-            {/* <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <span className="text-sm text-gray-500">Showing 1 to 10 of {data.length} results</span>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" disabled><ChevronLeft size={16} /></Button>
-                    <Button variant="outline" size="sm" disabled><ChevronRight size={16} /></Button>
+            {/* Pagination */}
+            {totalPages > 1 && (
+                <div className="px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                    <span className="text-sm text-gray-500">
+                        Showing {currentPage} of {totalPages} pages
+                    </span>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => onPageChange(currentPage - 1)}
+                        >
+                            <ChevronLeft size={16} />
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => onPageChange(currentPage + 1)}
+                        >
+                            <ChevronRight size={16} />
+                        </Button>
+                    </div>
                 </div>
-            </div> */}
+            )}
         </div>
     );
 };
