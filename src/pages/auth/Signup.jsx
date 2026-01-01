@@ -47,6 +47,7 @@ export default function Signup() {
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
     if (!name || !email || !password) {
       alert("Please fill all required fields");
       return;
@@ -71,8 +72,8 @@ export default function Signup() {
         throw new Error(data.message || "Signup failed");
       }
       
-      console.log("Signup successful:", data);
-      if (data.message === "User registered. Please verify your email.") {
+      
+      if (res.ok) {
         Toast.fire({
           icon: "success",
           title: "Signup successful! Please verify your email.",
