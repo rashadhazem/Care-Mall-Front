@@ -85,7 +85,7 @@ export default function Login() {
           navigate("/vendor");
           break;
         default:
-          navigate("/");
+          navigate("/products");
       }
     }
     catch (error) {

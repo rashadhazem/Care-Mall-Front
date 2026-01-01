@@ -85,12 +85,12 @@ const VerifyPage = () => {
         icon: 'warning',
         title: 'Email is required',
       });
-      setMessage('Please enter your email first.');
       return;
     }
 
     try {
       setLoading(true);
+      console.log("email", email);
       const response = await fetch(
         'http://localhost:8000/api/v1/auth/resendOtp',
         {
@@ -198,12 +198,7 @@ const VerifyPage = () => {
             </form>
 
             {/* Message */}
-            {message && (
-              <p className="mt-4 text-center text-sm 
-                          text-red-500 dark:text-red-400">
-                {message}
-              </p>
-            )}
+            
 
             {/* Resend OTP */}
             <p className="mt-4 text-center text-sm

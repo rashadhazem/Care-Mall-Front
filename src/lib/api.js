@@ -76,15 +76,24 @@ export const CouponsApi = {
   deleteCoupon: (id) => api.delete(`/coupons/${id}`),
 }
 
-// export const ordersApi={
-//     createOrder: (orderData) => api.post('/orders', orderData),
-//     getOrders: () => api.get('/orders'),
-//     getOrderById: (id) => api.get(`/orders/${id}`),
-//     cancelOrder: (id) => api.put(`/orders/cancel/${id}`),
-// }
+export const ordersApi = {
+  createOrder: (cartId, orderData) => api.post(`/orders/${cartId}`, orderData),
+  getOrders: () => api.get('/orders'),
+  getOrderById: (id) => api.get(`/orders/${id}`),
+  // checkoutSession: (cartId, shippingAddress) => api.post(`/orders/checkout-session/${cartId}`, { shippingAddress }),
+}
 
 export const productsApi = {
-  getProducts: (page = 1) => api.get(`/products?page=${page}`),
+  // Update to accept params object and convert to query string
+  getProducts: (params = {}) => {
+    // If params is just a page number (old usage), handle it
+    if (typeof params === 'number') {
+      return api.get(`/products?page=${params}`);
+    }
+    // Otherwise treat as query object
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/products?${queryString}`);
+  },
   getProductById: (id) => api.get(`/products/${id}`),
   createProduct: (productData) => api.post('/products', productData),
   updateProduct: (id, productData) => api.put(`/products/${id}`, productData),

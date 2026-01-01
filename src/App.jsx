@@ -3,7 +3,7 @@ import { Routes, Route, Outlet } from 'react-router-dom';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import Home from './pages/Home';
-import Contact  from './pages/contact';
+import Contact from './pages/contact';
 import About from './pages/about';
 // Auth Imports
 
@@ -19,6 +19,8 @@ import StoresPage from './pages/StoresPage';
 import ProductsPage from './pages/ProductsPage';
 import ProductDetailsPage from './pages/ProductDetailsPage';
 import CartPage from './pages/CartPage';
+import WishlistPage from './pages/WishlistPage';
+import OrdersPage from './pages/OrdersPage';
 
 // Vendor Imports
 import VendorLayout from './components/layout/VendorLayout';
@@ -67,8 +69,14 @@ function App() {
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="products/:id" element={<ProductDetailsPage />} />
                     <Route path="cart" element={<CartPage />} />
-                    <Route path="about" element={<About/>}/>
-                    <Route path="contact" element={<Contact/>}/>
+                    <Route path="about" element={<About />} />
+                    <Route path="contact" element={<Contact />} />
+
+                    {/* Protected User Routes */}
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="wishlist" element={<WishlistPage />} />
+                        <Route path="orders" element={<OrdersPage />} />
+                    </Route>
 
                     {/*auth routes*/}
                     <Route path="/login" element={<div className="p-10 text-center"><Login /></div>} />

@@ -142,7 +142,7 @@ const StoresPage = () => {
 
                                 <div className="p-5 flex items-start gap-4">
                                     <img
-                                        src={store.logo || store.image || '/placeholder-logo.jpg'}
+                                        src={store.logo || store.image.url || '/placeholder-logo.jpg'}
                                         alt={`${store.name} logo`}
                                         className="w-16 h-16 rounded-xl object-cover border-2 border-white dark:border-gray-700 shadow-md -mt-10 bg-white"
                                         onError={(e) => { e.target.src = '/placeholder-logo.jpg'; }}

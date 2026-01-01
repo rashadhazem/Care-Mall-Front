@@ -27,6 +27,8 @@ const resources = {
             "info2": "Your premium shopping destination.",
             "email": "Email",
             "password": "Password",
+            "product": "Product",
+            "products": "Products",
 
             "signup": "Sign Up",
             "Don't have an account?": " Don't have an account?",
@@ -120,7 +122,7 @@ const resources = {
             "user": "مستخدم",
             "vendor": "بائع",
             "Signing up...": "جاري إنشاء الحساب...",
-
+            "product": "منتج",
             // Admin General
             "dashboard": "لوحة التحكم",
             "users_management": "إدارة المستخدمين",
@@ -143,6 +145,7 @@ const resources = {
             "created": "تم الإنشاء!",
             "error": "خطأ",
             "success": "نجاح",
+            "products": "منتجات",
 
             // Admin Users
             "add_user": "إضافة مستخدم",

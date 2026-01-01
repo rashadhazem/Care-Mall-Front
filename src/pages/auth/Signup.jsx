@@ -42,14 +42,8 @@ export default function Signup() {
     if (password.length < 5) {
       return "Password must be at least 5 characters";
     }
-
     return null;
   };
-
-
-
-
-
   const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
@@ -83,7 +77,6 @@ export default function Signup() {
           icon: "success",
           title: "Signup successful! Please verify your email.",
         });
-        localStorage.setItem("user", JSON.stringify(data));
         navigate("/login-otp");
       } else {
         Alert("error", "Signup failed", "Please try again");
@@ -184,7 +177,7 @@ export default function Signup() {
               disabled={loading}
               className="w-full py-3.5 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 transform transition-all active:scale-95"
             >
-              { loading ? t("Signing up...") : t("signup")}
+              { loading ? t("Signing up.....") : t("signup")}
             </button>
 
             <p className="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
