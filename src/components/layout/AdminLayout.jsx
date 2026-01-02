@@ -85,7 +85,7 @@ const AdminLayout = () => {
                             </NavLink>
                         ))}
                     </nav>
-
+                    
                     <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
                         <div className="flex items-center gap-3 px-4 py-3">
                             <div className="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 font-bold">

@@ -13,7 +13,8 @@ const VendorOrders = () => {
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [isDetailsOpen, setIsDetailsOpen] = useState(false);
-
+    console.log("selected order",selectedOrder);
+    console.log("orders",orders);
     useEffect(() => {
         fetchOrders();
     }, []);
@@ -60,7 +61,7 @@ const VendorOrders = () => {
     };
 
     const columns = [
-        { header: t('order_id'), accessor: 'id', render: (o) => <span className="font-mono text-sm">#{o.id}</span> },
+        { header: t('order_id'), accessor: 'id', render: (o) => <span className="font-mono text-sm">{o._id}</span> },
         { header: t('customer'), accessor: 'user', render: (o) => o.user?.name || 'Guest' },
         { header: t('date'), accessor: 'createdAt', render: (o) => new Date(o.createdAt).toLocaleDateString() },
         { header: t('total'), accessor: 'totalOrderPrice', render: (o) => `$${o.totalOrderPrice}` },
@@ -119,7 +120,7 @@ const VendorOrders = () => {
             <Modal
                 isOpen={isDetailsOpen}
                 onClose={() => setIsDetailsOpen(false)}
-                title={`Order Details #${selectedOrder?.id}`}
+                title={`Order Details #${selectedOrder?._id}`}
                 className="max-w-3xl"
             >
                 {selectedOrder && (
@@ -157,13 +158,13 @@ const VendorOrders = () => {
                                         {selectedOrder.cartItems?.map((item, idx) => (
                                             <tr key={idx} className="bg-white dark:bg-gray-800">
                                                 <td className="px-4 py-3 flex items-center gap-3">
-                                                    <img src={item.product?.imageCover_url} alt="" className="w-10 h-10 rounded-md object-cover bg-gray-100" />
+                                                    <img src={item.product?.imageCover.url} alt="" className="w-10 h-10 rounded-md object-cover bg-gray-100" />
                                                     <span className="font-medium truncate max-w-[200px]">{item.product?.title}</span>
                                                 </td>
                                                 <td className="px-4 py-3 text-gray-500">{item.color || '-'}</td>
                                                 <td className="px-4 py-3 text-right">${item.price}</td>
-                                                <td className="px-4 py-3 text-center">{item.count}</td>
-                                                <td className="px-4 py-3 text-right font-medium">${(item.price * item.count).toFixed(2)}</td>
+                                                <td className="px-4 py-3 text-center">{item.quantity}</td>
+                                                <td className="px-4 py-3 text-right font-medium">${(item.price * item.quantity).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

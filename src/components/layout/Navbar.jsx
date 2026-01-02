@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDispatch, useSelector } from 'react-redux';
 import { toggleTheme } from '../../store/slices/themeSlice';
@@ -33,7 +33,7 @@ const Navbar = () => {
         navigate('/login');
         setIsMenuOpen(false);
     };
-
+    const [open, setOpen] = useState(false);
     // Helper to close menu on link click
     const closeMenu = () => setIsMenuOpen(false);
 
@@ -60,7 +60,7 @@ const Navbar = () => {
                             {t('stores') || 'Stores'}
                         </Link>
 
-                        {isAuthenticated && (
+                        {isAuthenticated && role === 'user' && (
                             <>
                                 <Link to="/wishlist" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Wishlist">
                                     <Heart size={20} />
@@ -71,14 +71,16 @@ const Navbar = () => {
                             </>
                         )}
 
-                        <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 hover:text-primary-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Cart">
-                            <ShoppingCart size={20} />
-                            {items.length > 0 && (
-                                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                                    {items.length}
-                                </span>
-                            )}
-                        </Link>
+                        {(!isAuthenticated || role === 'user') && (
+                            <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 hover:text-primary-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Cart">
+                                <ShoppingCart size={20} />
+                                {items.length > 0 && (
+                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                                        {items.length}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
 
                         <div className="h-6 w-px bg-gray-300 dark:bg-gray-700 mx-2"></div>
 
@@ -92,57 +94,100 @@ const Navbar = () => {
                         </Button>
 
                         {isAuthenticated ? (
-                            <div className="relative group">
+                            <div
+                                className="relative"
+                                onMouseEnter={() => setOpen(true)}
+                                onMouseLeave={() => setOpen(false)}
+                            >
+                                {/* Button */}
                                 <Button variant="ghost" className="flex items-center gap-2">
                                     <User size={20} />
-                                    <span className="hidden lg:inline max-w-[100px] truncate">{user?.name?.split(' ')[0]}</span>
+                                    <span className="hidden lg:inline max-w-[100px] truncate">
+                                        {user?.name?.split(" ")?.[0] || "User"}
+                                    </span>
                                 </Button>
-                                {/* Dropdown for user/admin actions */}
-                                <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 hidden group-hover:block">
-                                    {role === 'admin' && (
-                                        <Link to="/admin" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            <LayoutDashboard className="inline mr-2 w-4 h-4" /> Admin Dashboard
-                                        </Link>
-                                    )}
-                                    {role === 'vendor' && (
-                                        <Link to="/vendor" className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            <LayoutDashboard className="inline mr-2 w-4 h-4" /> Vendor Dashboard
-                                        </Link>
-                                    )}
-                                    <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <LogOut className="inline mr-2 w-4 h-4" /> {t('logout')}
-                                    </button>
-                                </div>
+
+                                {/* Dropdown */}
+                                {open && (
+                                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
+                                        {role === "user" && (
+                                            <Link
+                                                to="/profile"
+                                                onClick={() => setOpen(false)}
+                                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            >
+                                                <User className="inline mr-2 w-4 h-4" />
+                                                {t("myProfile") || "My Profile"}
+                                            </Link>
+                                        )}
+
+                                        {role === "admin" && (
+                                            <Link
+                                                to="/admin"
+                                                onClick={() => setOpen(false)}
+                                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            >
+                                                <LayoutDashboard className="inline mr-2 w-4 h-4" />
+                                                Admin Dashboard
+                                            </Link>
+                                        )}
+
+                                        {role === "vendor" && (
+                                            <Link
+                                                to="/vendor"
+                                                onClick={() => setOpen(false)}
+                                                className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                            >
+                                                <LayoutDashboard className="inline mr-2 w-4 h-4" />
+                                                Vendor Dashboard
+                                            </Link>
+                                        )}
+
+                                        <button
+                                            onClick={() => {
+                                                handleLogout();
+                                                setOpen(false);
+                                            }}
+                                            className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
+                                        >
+                                            <LogOut className="inline mr-2 w-4 h-4" />
+                                            {t("logout")}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="flex items-center gap-2">
-                            <Link to="/login">
-                                <Button variant="primary" size="sm">
-                                    {t('login')}
-                                </Button>
-                            </Link>
-                            <Link to="/signup">
-                                <Button variant="primary" size="sm">
-                                    {t('signup')}
-                                </Button>
-                            </Link>
+                                <Link to="/login">
+                                    <Button variant="primary" size="sm">
+                                        {t("login")}
+                                    </Button>
+                                </Link>
+                                <Link to="/signup">
+                                    <Button variant="primary" size="sm">
+                                        {t("signup")}
+                                    </Button>
+                                </Link>
                             </div>
                         )}
-                    </div>
 
-                    {/* Mobile menu button */}
-                    <div className="md:hidden flex items-center gap-2">
-                        <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 p-2">
-                            <ShoppingCart size={24} />
-                            {items.length > 0 && (
-                                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                                    {items.length}
-                                </span>
+
+                        {/* Mobile menu button */}
+                        <div className="md:hidden flex items-center gap-2">
+                            {(!isAuthenticated || role === 'user') && (
+                                <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 p-2">
+                                    <ShoppingCart size={24} />
+                                    {items.length > 0 && (
+                                        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                                            {items.length}
+                                        </span>
+                                    )}
+                                </Link>
                             )}
-                        </Link>
-                        <Button variant="ghost" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                            <Menu size={24} />
-                        </Button>
+                            <Button variant="ghost" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                <Menu size={24} />
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -159,12 +204,16 @@ const Navbar = () => {
 
                     {isAuthenticated && (
                         <>
-                            <Link to="/wishlist" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                {t('wishlist') || 'Wishlist'}
-                            </Link>
-                            <Link to="/orders" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                {t('orders') || 'Orders'}
-                            </Link>
+                            {role === 'user' && (
+                                <>
+                                    <Link to="/wishlist" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        {t('wishlist') || 'Wishlist'}
+                                    </Link>
+                                    <Link to="/orders" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                        {t('orders') || 'Orders'}
+                                    </Link>
+                                </>
+                            )}
                             {role === 'admin' && (
                                 <Link to="/admin" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800">
                                     Admin Dashboard
@@ -197,22 +246,23 @@ const Navbar = () => {
                         </Button>
                     ) : (
                         <div className="flex  justify-center mt-4 gap-2">
-                        <Link to="/login" onClick={closeMenu}>
-                            <Button variant="primary" className="w-full justify-center mt-4">
-                                {t('login')}
-                            </Button>
-                        </Link>
-                        <Link to="/signup" onClick={closeMenu}>
-                            <Button variant="primary" className="w-full justify-center mt-4">
-                                {t('signup')}
-                            </Button>
-                        </Link>
+                            <Link to="/login" onClick={closeMenu}>
+                                <Button variant="primary" className="w-full justify-center mt-4">
+                                    {t('login')}
+                                </Button>
+                            </Link>
+                            <Link to="/signup" onClick={closeMenu}>
+                                <Button variant="primary" className="w-full justify-center mt-4">
+                                    {t('signup')}
+                                </Button>
+                            </Link>
                         </div>
                     )}
                 </div>
             )}
         </nav >
     );
+
 };
 
 export default Navbar;

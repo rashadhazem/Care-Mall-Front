@@ -32,8 +32,8 @@ const ProductDetailsPage = () => {
                 setProduct(productData);
 
                 // Initialize selected image and color
-                if (productData.imageCover_url || productData.imageCover) {
-                    setSelectedImage(productData.imageCover_url || productData.imageCover);
+                if (productData.imageCover.url || productData.imageCover) {
+                    setSelectedImage(productData.imageCover.url || productData.imageCover);
                 }
                 if (productData.colors && productData.colors.length > 0) {
                     setSelectedColor(productData.colors[0]);
@@ -163,10 +163,10 @@ const ProductDetailsPage = () => {
                         {images && images.length > 0 && (
                             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                                 <button
-                                    onClick={() => setSelectedImage(product.imageCover_url || product.imageCover)}
-                                    className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${selectedImage === (product.imageCover_url || product.imageCover) ? 'border-primary-500' : 'border-transparent'}`}
+                                    onClick={() => setSelectedImage(product.imageCover.url || product.imageCover)}
+                                    className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${selectedImage === (product.imageCover.url || product.imageCover) ? 'border-primary-500' : 'border-transparent'}`}
                                 >
-                                    <img src={product.imageCover_url || product.imageCover} alt="Cover" className="w-full h-full object-cover" />
+                                    <img src={product.imageCover.url || product.imageCover} alt="Cover" className="w-full h-full object-cover" />
                                 </button>
                                 {images.map((img, idx) => (
                                     <button

@@ -96,7 +96,7 @@ const OrdersPage = () => {
                                 {order.cartItems?.map((item, index) => (
                                     <div key={index} className="flex gap-4">
                                         <img
-                                            src={item.product?.imageCover_url}
+                                            src={item.product?.imageCover.url}
                                             alt={item.product?.title || 'Product'}
                                             className="w-16 h-16 rounded-lg object-cover bg-gray-100"
                                         />

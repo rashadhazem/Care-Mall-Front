@@ -15,6 +15,7 @@ const CartPage = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    console.log("items is ",items);
 
     // Checkout State
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -165,7 +166,7 @@ const CartPage = () => {
                     {items.map((item) => (
                         <div key={item.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
                             <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 flex items-center justify-center flex-shrink-0">
-                                <img src={item.image} alt={item.name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                                <img src={item.imageCover?.url} alt={item.name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                             </div>
 
                             <div className="flex-1 min-w-0">

@@ -8,11 +8,11 @@ import Button from '../ui/Button';
 
 const ProductCard = ({ product }) => {
     const dispatch = useDispatch();
-
+     console.log("product",product);
     // Handle different API response structures
     const productId = product._id || product.id;
     const productName = product.title || product.name;
-    const productImage = product.imageCover || product.image || '/placeholder-product.jpg';
+    const productImage = product.imageCover.url || product.image || '/placeholder-product.jpg';
     const productPrice = product.price;
     const productRating = product.ratingsAverage || product.rating || 4.5;
     const productReviews = product.ratingsQuantity || product.reviews || 0;

@@ -238,8 +238,8 @@ const VendorProducts = () => {
                     setProducts(prev => prev.filter(p => p._id !== id));
                     Swal.fire(t('deleted'), t('product_deleted_success'), 'success');
                 } catch (error) {
-                    console.error("Error deleting product:", error);
-                    Swal.fire(t('error'), t('failed_to_delete_product'), 'error');
+                    
+                    Swal.fire(t('error admin only'), t('failed_to_delete_product'), 'error');
                 }
             }
         });

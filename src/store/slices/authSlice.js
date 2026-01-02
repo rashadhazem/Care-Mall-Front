@@ -81,6 +81,21 @@ const authSlice = createSlice({
 
       localStorage.removeItem("token");
     },
+    checkAuth: (state) => {
+      if (!state.token) return;
+
+      const decoded = jwtDecode(state.token);
+
+      state.user = {
+        _id: decoded._id,
+        name: decoded.name,
+        email: decoded.email,
+        isVerified: decoded.isVerified,
+        isAdmin: decoded.isAdmin,
+      };
+      state.role = decoded.role;
+      state.isAuthenticated = true;
+    },
 
     updateUserFromToken: (state) => {
       if (!state.token) return;
@@ -103,6 +118,7 @@ export const {
   loginSuccess,
   logout,
   updateUserFromToken,
+  checkAuth,
 } = authSlice.actions;
 
 export default authSlice.reducer;

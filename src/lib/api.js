@@ -155,7 +155,10 @@ export const categoriesApi = {
 
 
 
-
+export const statisticsApi = {
+  getAdminStatistics: () => api.get('/stats/admin'),
+  getVendorStatistics: () => api.get('/stats/vendor'),
+}
 
 
 export default api;

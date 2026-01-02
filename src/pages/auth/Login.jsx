@@ -76,6 +76,9 @@ export default function Login() {
         title: 'Login successful!',
       });
       console.log("Login successful:", user);
+      if(user.isVerified === false){
+        navigate("/login-otp");
+      }
       console.log("role", role);
       switch (user.user.role) {
         case "admin":

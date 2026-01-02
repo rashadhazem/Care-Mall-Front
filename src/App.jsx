@@ -5,6 +5,7 @@ import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import Contact from './pages/contact';
 import About from './pages/about';
+
 // Auth Imports
 
 import Login from './pages/auth/Login';
@@ -21,6 +22,7 @@ import ProductDetailsPage from './pages/ProductDetailsPage';
 import CartPage from './pages/CartPage';
 import WishlistPage from './pages/WishlistPage';
 import OrdersPage from './pages/OrdersPage';
+import ProfilePage from './pages/ProfilePage';
 
 // Vendor Imports
 import VendorLayout from './components/layout/VendorLayout';
@@ -77,6 +79,7 @@ function App() {
                     <Route element={<ProtectedRoute />}>
                         <Route path="wishlist" element={<WishlistPage />} />
                         <Route path="orders" element={<OrdersPage />} />
+                        <Route path="profile" element={<ProfilePage />} />
                     </Route>
 
                     {/*auth routes*/}
@@ -85,6 +88,7 @@ function App() {
                     <Route path="/login-otp" element={<div className="p-10 text-center"><LoginOtp /></div>} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
                     <Route path="/reset-password" element={<div className="p-10 text-center">Reset Password Page (Coming Soon)</div>} />
+
                     {/* Catch all */}
                     <Route path="*" element={<NotFoundPage />} />
                 </Route>
@@ -97,6 +101,7 @@ function App() {
                         <Route path="products" element={<VendorProducts />} />
                         <Route path="orders" element={<VendorOrders />} />
                         <Route path="chat" element={<VendorChat />} />
+
                     </Route>
                 </Route>
 
@@ -110,6 +115,7 @@ function App() {
                         <Route path="categories" element={<AdminCategories />} />
                         <Route path="orders" element={<AdminOrders />} />
                         <Route path="users" element={<AdminUsers />} />
+
                     </Route>
                 </Route>
             </Routes>
