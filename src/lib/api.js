@@ -80,7 +80,9 @@ export const ordersApi = {
   createOrder: (cartId, orderData) => api.post(`/orders/${cartId}`, orderData),
   getOrders: () => api.get('/orders'),
   getOrderById: (id) => api.get(`/orders/${id}`),
-  // checkoutSession: (cartId, shippingAddress) => api.post(`/orders/checkout-session/${cartId}`, { shippingAddress }),
+  updateOrderToPaid: (id) => api.put(`/orders/${id}/pay`),
+  updateOrderToDelivered: (id) => api.put(`/orders/${id}/deliver`),
+  checkOutSession: (cartId) => api.get(`/orders/checkout-session/${cartId}`),
 }
 
 export const productsApi = {

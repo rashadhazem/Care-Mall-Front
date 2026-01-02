@@ -11,7 +11,8 @@ import {
     X,
     Sun,
     Moon,
-    Tags
+    Tags,
+    Package
 } from 'lucide-react';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
@@ -36,6 +37,7 @@ const AdminLayout = () => {
         { path: '/admin/stores', label: 'Stores', icon: <Store size={20} /> },
         { path: '/admin/products', label: 'Products', icon: <ShoppingBag size={20} /> },
         { path: '/admin/categories', label: 'Categories', icon: <Tags size={20} /> },
+        { path: '/admin/orders', label: 'Orders', icon: <Package size={20} /> },
         { path: '/admin/users', label: 'Users', icon: <Users size={20} /> },
     ];
 

@@ -73,12 +73,18 @@ const ProductCard = ({ product }) => {
 
                 <div className="flex items-center justify-between mt-4">
                     <div className="flex flex-col">
-                        <span className="text-lg font-bold text-gray-900 dark:text-white">
-                            ${productPrice}
-                        </span>
-                        {product.priceAfterDiscount && product.priceAfterDiscount < productPrice && (
-                            <span className="text-xs text-gray-400 line-through">
-                                ${product.priceAfterDiscount}
+                        {product.priceAfterDiscount && product.priceAfterDiscount < productPrice ? (
+                            <>
+                                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                    ${product.priceAfterDiscount}
+                                </span>
+                                <span className="text-xs text-gray-400 line-through">
+                                    ${productPrice}
+                                </span>
+                            </>
+                        ) : (
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">
+                                ${productPrice}
                             </span>
                         )}
                     </div>

@@ -3,9 +3,11 @@ import AdminTable from '../../components/admin/AdminTable';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
-import { Search, Filter, Edit, Trash2, Plus } from 'lucide-react';
+import Select from '../../components/ui/Select';
+import Textarea from '../../components/ui/Textarea';
+import { Search, Edit, Trash2, Plus } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { productsApi } from '../../lib/api';
+import { productsApi, categoriesApi, subCategoriesApi, brandsApi } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
 
 const VendorProducts = () => {
@@ -14,16 +16,53 @@ const VendorProducts = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-    const [formData, setFormData] = useState({ title: '', price: '', imageCover: '', category: '', stock: '' });
+
+    // Form State
+    const [formData, setFormData] = useState({
+        title: '',
+        description: '',
+        price: '',
+        priceAfterDiscount: '',
+        quantity: '',
+        category: '',
+        subcategories: [],
+        brand: '',
+        imageCover: '',
+        images: [],
+        colors: '',
+    });
+
+    // Data for Selects
+    const [categories, setCategories] = useState([]);
+    const [brands, setBrands] = useState([]);
+    const [availableSubCategories, setAvailableSubCategories] = useState([]);
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
+    useEffect(() => {
+        fetchProducts(currentPage);
+        fetchInitialData();
+    }, [currentPage]);
+
+    const fetchInitialData = async () => {
+        try {
+            const [catsRes, brandsRes] = await Promise.all([
+                categoriesApi.getCategories(1),
+                brandsApi.getBrands()
+            ]);
+            setCategories(catsRes.data.data || []);
+            setBrands(brandsRes.data.data || []);
+        } catch (error) {
+            console.error("Error fetching initial data:", error);
+        }
+    };
+
     const fetchProducts = async (page = 1) => {
         setLoading(true);
         try {
-            const res = await productsApi.getProducts(page);
+            const res = await productsApi.getProducts({ page });
             setProducts(res.data.data || []);
 
             if (res.data.paginationResult) {
@@ -32,7 +71,6 @@ const VendorProducts = () => {
             } else {
                 setTotalPages(1);
             }
-
         } catch (error) {
             console.error("Error fetching products:", error);
             Swal.fire(t('error'), t('failed_to_fetch_products'), 'error');
@@ -41,23 +79,51 @@ const VendorProducts = () => {
         }
     };
 
-    useEffect(() => {
-        fetchProducts(currentPage);
-    }, [currentPage]);
+    const fetchSubCategories = async (categoryId) => {
+        if (!categoryId) {
+            setAvailableSubCategories([]);
+            return;
+        }
+        try {
+            const res = await subCategoriesApi.getSubCategories(categoryId);
+            setAvailableSubCategories(res.data.data || []);
+        } catch (error) {
+            console.error("Error fetching subcategories:", error);
+        }
+    };
 
-    const handleOpenModal = (product = null) => {
+    const handleCategoryChange = (e) => {
+        const catId = e.target.value;
+        setFormData(prev => ({ ...prev, category: catId, subcategories: [] }));
+        fetchSubCategories(catId);
+    };
+
+    const handleOpenModal = async (product = null) => {
         if (product) {
+            console.log("the product is ",product);
+            const catId = product.category?._id || product.category;
+            if (catId) await fetchSubCategories(catId);
             setEditingProduct(product);
             setFormData({
                 title: product.title,
+                description: product.description || '',
                 price: product.price,
-                imageCover: product.imageCover || '',
-                category: product.category._id || product.category,
-                stock: product.stock || 0
+                priceAfterDiscount: product.priceAfterDiscount || '',
+                quantity: product.quantity || product.stock || '', // Map stock back to quantity if needed
+                category: catId,
+                subcategories: product.subcategories ? product.subcategories.map(s => s._id || s) : [],
+                brand: product.brand?._id || product.brand || '',
+                imageCover: '',
+                images: [],
+                colors: product.colors ? product.colors.join(', ') : '',
             });
         } else {
             setEditingProduct(null);
-            setFormData({ title: '', price: '', imageCover: '', category: '', stock: '' });
+            setFormData({
+                title: '', description: '', price: '', priceAfterDiscount: '', quantity: '',
+                category: '', subcategories: [], brand: '', imageCover: '', images: [], colors: ''
+            });
+            setAvailableSubCategories([]);
         }
         setIsModalOpen(true);
     };
@@ -65,22 +131,77 @@ const VendorProducts = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingProduct(null);
-        setFormData({ title: '', price: '', imageCover: '', category: '', stock: '' });
+    };
+
+    const handleCreateSubCategory = async () => {
+        if (!formData.category) {
+            Swal.fire(t('error'), 'Please select a category first', 'warning');
+            return;
+        }
+
+        const { value: subCategoryName } = await Swal.fire({
+            title: 'Create New SubCategory',
+            input: 'text',
+            inputLabel: 'SubCategory Name',
+            inputPlaceholder: 'Enter subcategory name',
+            showCancelButton: true,
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'You need to write something!'
+                }
+            }
+        });
+
+        if (subCategoryName) {
+            try {
+                const res = await subCategoriesApi.createSubCategory(formData.category, { name: subCategoryName });
+                const newSub = res.data.data;
+                setAvailableSubCategories(prev => [...prev, newSub]);
+                Swal.fire('Created!', 'SubCategory has been created.', 'success');
+            } catch (error) {
+                console.error("Error creating subcategory:", error);
+                Swal.fire('Error', 'Failed to create subcategory', 'error');
+            }
+        }
     };
 
     const handleSave = async () => {
-        if (!formData.title) {
-            Swal.fire(t('error'), t('title_required'), 'error');
+        if (!formData.title || !formData.price || !formData.quantity || !formData.category) {
+            Swal.fire(t('error'), t('title_required') + ' & Price & Quantity & Category', 'error');
             return;
         }
 
         const fd = new FormData();
         fd.append('title', formData.title);
+        fd.append('description', formData.description);
         fd.append('price', formData.price);
+        fd.append('quantity', formData.quantity);
         fd.append('category', formData.category);
-        fd.append('stock', formData.stock);
+
+        if (formData.priceAfterDiscount) fd.append('priceAfterDiscount', formData.priceAfterDiscount);
+        if (formData.brand) fd.append('brand', formData.brand);
+
+        if (formData.colors) {
+            const colorsArray = formData.colors.split(',').map(c => c.trim()).filter(c => c);
+            colorsArray.forEach((color, index) => {
+                fd.append(`colors[${index}]`, color);
+            });
+        }
+
+        if (formData.subcategories && formData.subcategories.length > 0) {
+            formData.subcategories.forEach((sub, index) => {
+                fd.append(`subcategories[${index}]`, sub);
+            });
+        }
+
         if (formData.imageCover instanceof File) {
             fd.append('imageCover', formData.imageCover);
+        }
+
+        if (formData.images && formData.images.length > 0) {
+            Array.from(formData.images).forEach(file => {
+                fd.append('images', file);
+            });
         }
 
         try {
@@ -95,7 +216,8 @@ const VendorProducts = () => {
             fetchProducts(currentPage);
         } catch (error) {
             console.error("Error saving product:", error);
-            Swal.fire(t('error'), t('failed_to_save_product'), 'error');
+            const msg = error.response?.data?.message || t('failed_to_save_product');
+            Swal.fire(t('error'), msg, 'error');
         }
     };
 
@@ -127,16 +249,16 @@ const VendorProducts = () => {
         {
             header: t('product_title'), accessor: 'title', render: (p) => (
                 <div className="flex items-center gap-3">
-                    <img src={p.imageCover_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                    <img src={p.imageCover.url } alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                     <div>
-                        <p className="font-medium text-gray-900 dark:text-white">{p.title}</p>
+                        <p className="font-medium text-gray-900 dark:text-white" title={p.description}>{p.title}</p>
                         <p className="text-xs text-gray-500">{p.category?.name || p.category}</p>
                     </div>
                 </div>
             )
         },
         { header: t('price'), accessor: 'price', render: (p) => `$${p.price}` },
-        { header: t('stock'), accessor: 'stock', render: (p) => p.stock },
+        { header: 'Qty', accessor: 'quantity' }, // Display quantity instead of stock
     ];
 
     const actions = (product) => (
@@ -180,56 +302,147 @@ const VendorProducts = () => {
                 onPageChange={setCurrentPage}
             />
 
-            <Modal
-                isOpen={isModalOpen}
-                onClose={handleCloseModal}
-                title={editingProduct ? t('edit_product') : t('add_product')}
-                footer={
-                    <>
-                        <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
-                        <Button onClick={handleSave}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
-                    </>
-                }
-            >
-                <div className="space-y-4">
-                    <Input
-                        label={t('product_name')}
-                        placeholder={t('product_name_placeholder')}
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    />
-                    <div className="flex gap-4">
-                        <Input
-                            label={t('price')}
-                            type="number"
-                            placeholder="0.00"
-                            className="flex-1"
-                            value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        />
-                        <Input
-                            label={t('stock')}
-                            type="number"
-                            placeholder="0"
-                            className="flex-1"
-                            value={formData.stock}
-                            onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                        />
+            {isModalOpen && (
+                <Modal
+                    isOpen={isModalOpen}
+                    onClose={handleCloseModal}
+                    title={editingProduct ? t('edit_product') : t('add_product')}
+                    footer={
+                        <>
+                            <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
+                            <Button onClick={handleSave}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
+                        </>
+                    }
+                    className="max-w-4xl"
+                >
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-4">
+                            <Input
+                                label={t('product_name')}
+                                placeholder={t('product_name_placeholder')}
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            />
+                            <Textarea
+                                label="Description"
+                                placeholder="Product details..."
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            />
+                            <div className="flex gap-4">
+                                <Input
+                                    label={t('price')}
+                                    type="number"
+                                    placeholder="0.00"
+                                    className="flex-1"
+                                    value={formData.price}
+                                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                                />
+                                <Input
+                                    label="Create Offer (Price After Discount)"
+                                    type="number"
+                                    placeholder="Optional"
+                                    className="flex-1"
+                                    value={formData.priceAfterDiscount}
+                                    onChange={(e) => setFormData({ ...formData, priceAfterDiscount: e.target.value })}
+                                />
+                            </div>
+                            <div className="flex gap-4">
+                                <Input
+                                    label="Quantity"
+                                    type="number"
+                                    placeholder="0"
+                                    className="flex-1"
+                                    value={formData.quantity}
+                                    onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <Select
+                                label={t('category')}
+                                value={formData.category}
+                                onChange={handleCategoryChange}
+                            >
+                                <option value="">Select Category</option>
+                                {categories.map(c => (
+                                    <option key={c._id} value={c._id}>{c.name}</option>
+                                ))}
+                            </Select>
+
+                            <div className="flex items-end gap-2">
+                                <div className="flex-1">
+                                    <Select
+                                        label="Subcategory"
+                                        value={formData.subcategories[0] || ''}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setFormData({ ...formData, subcategories: val ? [val] : [] })
+                                        }}
+                                        disabled={!availableSubCategories.length}
+                                    >
+                                        <option value="">Select Subcategory</option>
+                                        {availableSubCategories.map(s => (
+                                            <option key={s._id} value={s._id}>{s.name}</option>
+                                        ))}
+                                    </Select>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="px-3"
+                                    title="Create New Subcategory"
+                                    onClick={handleCreateSubCategory}
+                                    disabled={!formData.category}
+                                >
+                                    <Plus size={18} />
+                                </Button>
+                            </div>
+
+                            <Select
+                                label="Brand"
+                                value={formData.brand}
+                                onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                            >
+                                <option value="">Select Brand</option>
+                                {brands.map(b => (
+                                    <option key={b._id} value={b._id}>{b.name}</option>
+                                ))}
+                            </Select>
+
+                            <Input
+                                label="Colors (comma separated)"
+                                placeholder="Red, Blue, Green"
+                                value={formData.colors}
+                                onChange={(e) => setFormData({ ...formData, colors: e.target.value })}
+                            />
+
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Cover Image</label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => setFormData({ ...formData, imageCover: e.target.files[0] })}
+                                    />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Images (Album)</label>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) => setFormData({ ...formData, images: e.target.files })}
+                                    />
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <Input
-                        label={t('category')}
-                        placeholder={t('category_placeholder')}
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    />
-                    <Input
-                        label={t('image')}
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => setFormData({ ...formData, imageCover: e.target.files[0] })}
-                    />
-                </div>
-            </Modal>
+                </Modal>
+            )}
         </div>
     );
 };

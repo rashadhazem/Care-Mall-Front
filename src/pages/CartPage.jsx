@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { removeFromCart, updateQuantity, clearCart} from '../store/slices/cartSlice';
+import { removeFromCart, updateQuantity, clearCart } from '../store/slices/cartSlice';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Helmet } from 'react-helmet-async';
@@ -24,6 +24,7 @@ const CartPage = () => {
         city: '',
         postalCode: ''
     });
+    const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' or 'card'
 
     // Sync cart from API on mount
     useEffect(() => {
@@ -82,33 +83,43 @@ const CartPage = () => {
 
         setLoading(true);
         try {
-            // If the cartId is not in Redux (e.g. from persisted state), we might need to fetch it or rely on the backend finding the user's cart
-            // The API createOrder usually expects a cartId in the URL: /orders/:cartId
-            // We need to ensure we have the cartId. 
-            // If Redux doesn't store cartId, we might need to fetch the cart first to get its ID.
-
             let currentCartId = cartId;
             if (!currentCartId) {
                 const res = await cartApi.getCart();
-                currentCartId = res.data.data._id;
+                // Ensure we get the ID correctly from the response structure
+                currentCartId = res.data.data?._id || res.data._id || res.data.cartId;
             }
 
             if (!currentCartId) {
                 throw new Error("No active cart found");
             }
 
-            await ordersApi.createOrder(currentCartId, { shippingAddress });
+            if (paymentMethod === 'cash') {
+                await ordersApi.createOrder(currentCartId, { shippingAddress });
 
-            dispatch(clearCart());
-            setIsCheckoutOpen(false);
-            Swal.fire({
-                title: 'Order Placed!',
-                text: 'Your order has been successfully placed.',
-                icon: 'success',
-                confirmButtonText: 'View Orders'
-            }).then(() => {
-                navigate('/orders');
-            });
+                dispatch(clearCart());
+                setIsCheckoutOpen(false);
+                Swal.fire({
+                    title: 'Order Placed!',
+                    text: 'Your order has been successfully placed.',
+                    icon: 'success',
+                    confirmButtonText: 'View Orders'
+                }).then(() => {
+                    navigate('/orders');
+                });
+            } else {
+                // Online Payment
+                const res = await ordersApi.checkOutSession(currentCartId);
+                // Assuming res.data.session.url or similar contains the Stripe/Gateway URL
+                // Verify the exact path in api.js or backend docs. 
+                // Usually it's in data.session.url or just data.url
+                const checkoutUrl = res.data.session?.url || res.data.url;
+                if (checkoutUrl) {
+                    window.location.href = checkoutUrl;
+                } else {
+                    throw new Error("Invalid checkout session URL");
+                }
+            }
 
         } catch (error) {
             console.error("Order placement failed", error);
@@ -243,13 +254,44 @@ const CartPage = () => {
                 footer={
                     <>
                         <Button variant="ghost" onClick={() => setIsCheckoutOpen(false)}>Cancel</Button>
-                        <Button onClick={handlePlaceOrder} isLoading={loading}>Place Order (Cash)</Button>
+                        <Button onClick={handlePlaceOrder} isLoading={loading}>
+                            {paymentMethod === 'cash' ? 'Place Order' : 'Proceed to Pay'}
+                        </Button>
                     </>
                 }
             >
                 <div className="space-y-4">
                     <div className="bg-blue-50 text-blue-800 p-3 rounded-lg text-sm mb-4">
-                        Note: Currently only "Cash on Delivery" is supported.
+                        Please enter your shipping details and select a payment method.
+                    </div>
+
+                    {/* Payment Method Selection */}
+                    <div className="space-y-2 mb-4">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Payment Method</label>
+                        <div className="flex gap-4">
+                            <label className={`flex-1 border rounded-lg p-3 cursor-pointer transition-all ${paymentMethod === 'cash' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="cash"
+                                    checked={paymentMethod === 'cash'}
+                                    onChange={() => setPaymentMethod('cash')}
+                                    className="hidden"
+                                />
+                                <div className="text-center font-medium">Cash on Delivery</div>
+                            </label>
+                            <label className={`flex-1 border rounded-lg p-3 cursor-pointer transition-all ${paymentMethod === 'card' ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                                <input
+                                    type="radio"
+                                    name="payment"
+                                    value="card"
+                                    checked={paymentMethod === 'card'}
+                                    onChange={() => setPaymentMethod('card')}
+                                    className="hidden"
+                                />
+                                <div className="text-center font-medium">Online Payment</div>
+                            </label>
+                        </div>
                     </div>
                     <Input
                         label="Delivery Address Details"

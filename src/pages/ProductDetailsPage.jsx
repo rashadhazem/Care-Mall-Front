@@ -3,12 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { addToCart } from '../store/slices/cartSlice';
 import { productsApi, wishlistApi, cartApi } from '../lib/api';
-import { Star, ShoppingCart, ArrowLeft, Truck, ShieldCheck, Heart } from 'lucide-react';
+import { Star, ShoppingCart, ArrowLeft, Truck, ShieldCheck, Heart, Check, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/ui/PageWrapper';
 import Swal from 'sweetalert2';
 import { Helmet } from 'react-helmet-async';
 import Button from '../components/ui/Button';
+import ProductReviews from '../components/products/ProductReviews';
 
 const ProductDetailsPage = () => {
     const { id } = useParams();
@@ -18,12 +19,25 @@ const ProductDetailsPage = () => {
     const [quantity, setQuantity] = useState(1);
     const [addingToCart, setAddingToCart] = useState(false);
 
+    // New State for schema fields
+    const [selectedImage, setSelectedImage] = useState('');
+    const [selectedColor, setSelectedColor] = useState('');
+
     useEffect(() => {
         const fetchProduct = async () => {
             try {
                 setLoading(true);
                 const response = await productsApi.getProductById(id);
-                setProduct(response.data.data || response.data);
+                const productData = response.data.data || response.data;
+                setProduct(productData);
+
+                // Initialize selected image and color
+                if (productData.imageCover_url || productData.imageCover) {
+                    setSelectedImage(productData.imageCover_url || productData.imageCover);
+                }
+                if (productData.colors && productData.colors.length > 0) {
+                    setSelectedColor(productData.colors[0]);
+                }
             } catch (error) {
                 console.error("Error fetching product details:", error);
             } finally {
@@ -34,12 +48,25 @@ const ProductDetailsPage = () => {
     }, [id]);
 
     const handleAddToCart = async () => {
+        if (product.stock === 0 || product.quantity === 0) {
+            Swal.fire('Out of Stock', 'This product is currently unavailable.', 'warning');
+            return;
+        }
+
         setAddingToCart(true);
-        // Optimistic Redux update (optional, but good for instant feedback)
-        dispatch(addToCart({ ...product, quantity }));
+        const cartItem = {
+            ...product,
+            quantity,
+            selectedColor
+        };
+        // Optimistic Redux update
+        dispatch(addToCart(cartItem));
 
         try {
-            await cartApi.addToCart({ productId: product._id });
+            await cartApi.addToCart({
+                productId: product._id,
+                color: selectedColor
+            });
             Swal.fire({
                 icon: 'success',
                 title: 'Added to Cart!',
@@ -53,7 +80,7 @@ const ProductDetailsPage = () => {
             Swal.fire({
                 icon: 'error',
                 title: 'Error',
-                text: 'Failed to add item to cart. Please try again.',
+                text: error.response?.data?.message || 'Failed to add item to cart. Please try again.',
             });
         } finally {
             setAddingToCart(false);
@@ -74,7 +101,7 @@ const ProductDetailsPage = () => {
         } catch (error) {
             console.error("Failed to add to wishlist", error);
             Swal.fire({
-                icon: 'info', // Could depend on error code (e.g. already exists)
+                icon: 'info',
                 title: 'Note',
                 text: error.response?.data?.message || 'Failed to add to wishlist',
             });
@@ -99,11 +126,17 @@ const ProductDetailsPage = () => {
         );
     }
 
+    const {
+        title, description, price, priceAfterDiscount,
+        ratingsAverage, ratingsQuantity, category,
+        brand, quantity: stock, images, colors
+    } = product;
+
     return (
         <PageWrapper className="max-w-7xl mx-auto px-4 py-8">
             <Helmet>
-                <title>{product.title || product.name} | Mall App</title>
-                <meta name="description" content={`Buy ${product.title || product.name} at the best price from ${product.store?.name || product.store}.`} />
+                <title>{title} | Mall App</title>
+                <meta name="description" content={`Buy ${title}.`} />
             </Helmet>
             <Link to="/products" className="inline-flex items-center text-gray-600 dark:text-gray-400 hover:text-primary-600 mb-6 transition-colors">
                 <ArrowLeft className="w-4 h-4 mr-2" />
@@ -111,66 +144,114 @@ const ProductDetailsPage = () => {
             </Link>
 
             <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 p-6 md:p-8">
                     {/* Image Section */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="p-6 md:p-8 bg-gray-50 dark:bg-gray-700/50 flex items-center justify-center"
-                    >
-                        <img
-                            src={product.imageCover_url || product.imageCover || product.image}
-                            alt={product.title || product.name}
-                            className="w-full max-w-md object-contain rounded-2xl hover:scale-105 transition-transform duration-500 mix-blend-multiply dark:mix-blend-normal"
-                        />
-                    </motion.div>
+                    <div className="space-y-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-4 flex items-center justify-center min-h-[300px] md:min-h-[400px]"
+                        >
+                            <img
+                                src={selectedImage}
+                                alt={title}
+                                className="w-full h-full max-h-[500px] object-contain mix-blend-multiply dark:mix-blend-normal hover:scale-105 transition-transform duration-500"
+                            />
+                        </motion.div>
+
+                        {/* Image Gallery */}
+                        {images && images.length > 0 && (
+                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                                <button
+                                    onClick={() => setSelectedImage(product.imageCover_url || product.imageCover)}
+                                    className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${selectedImage === (product.imageCover_url || product.imageCover) ? 'border-primary-500' : 'border-transparent'}`}
+                                >
+                                    <img src={product.imageCover_url || product.imageCover} alt="Cover" className="w-full h-full object-cover" />
+                                </button>
+                                {images.map((img, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => setSelectedImage(img.url)}
+                                        className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${selectedImage === img.url ? 'border-primary-500' : 'border-transparent'}`}
+                                    >
+                                        <img src={img.url} alt={`View ${idx + 1}`} className="w-full h-full object-cover" />
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
                     {/* Details Section */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 50 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="p-8 flex flex-col justify-center"
-                    >
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-semibold text-primary-500 tracking-wide uppercase">{product.category?.name || 'Category'}</p>
-                                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-1 mb-2">{product.title || product.name}</h1>
+                    <div className="flex flex-col">
+                        <div className="mb-6">
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="text-sm font-semibold text-primary-500 tracking-wide uppercase">{category?.name || 'Category'}</span>
+                                {brand && (
+                                    <>
+                                        <span className="text-gray-300">|</span>
+                                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                                            {brand.name || 'Brand'}
+                                        </span>
+                                    </>
+                                )}
                             </div>
-                            <button
-                                onClick={handleAddToWishlist}
-                                className="p-2 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
-                                title="Add to Wishlist"
-                            >
-                                <Heart className="w-6 h-6" />
-                            </button>
-                        </div>
+                            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">{title}</h1>
 
-                        <div className="flex items-center gap-4 mb-6">
-                            <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded-lg">
-                                <Star className="w-4 h-4 text-yellow-500 fill-current" />
-                                <span className="ml-1 font-bold text-yellow-700 dark:text-yellow-500">{product.ratingsAverage}</span>
+                            <div className="flex items-center gap-4 mb-4">
+                                <div className="flex items-center bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded-lg">
+                                    <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                                    <span className="ml-1 font-bold text-yellow-700 dark:text-yellow-500">{ratingsAverage || 0}</span>
+                                </div>
+                                <span className="text-gray-400">|</span>
+                                <span className="text-gray-500 dark:text-gray-400">{ratingsQuantity || 0} Reviews</span>
+                                <span className="text-gray-400">|</span>
+                                <span className={`flex items-center gap-1 font-medium ${stock > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {stock > 0 ? <Check size={16} /> : <AlertCircle size={16} />}
+                                    {stock > 0 ? `In Stock (${stock})` : 'Out of Stock'}
+                                </span>
                             </div>
-                            <span className="text-gray-400">|</span>
-                            <span className="text-gray-500 dark:text-gray-400">{product.ratingsQuantity || 0} Reviews</span>
-                        </div>
 
-                        <div className="flex items-end gap-3 mb-8">
-                            <span className="text-4xl font-bold text-gray-900 dark:text-white">${product.price}</span>
-                            {product.priceAfterDiscount && (
-                                <span className="text-xl text-gray-400 line-through mb-1">${product.priceAfterDiscount}</span>
-                            )}
+                            <div className="flex items-end gap-3 mb-6">
+                                {priceAfterDiscount && priceAfterDiscount < price ? (
+                                    <>
+                                        <span className="text-4xl font-bold text-gray-900 dark:text-white">${priceAfterDiscount}</span>
+                                        <span className="text-xl text-gray-400 line-through mb-1">${price}</span>
+                                    </>
+                                ) : (
+                                    <span className="text-4xl font-bold text-gray-900 dark:text-white">${price}</span>
+                                )}
+                            </div>
                         </div>
 
                         <p className="text-gray-600 dark:text-gray-300 mb-8 leading-relaxed">
-                            {product.description || `Experience premium quality with our ${(product.title || product.name).toLowerCase()}. Designed for comfort and style, this item is perfect for your daily needs.`}
+                            {description}
                         </p>
+
+                        {/* Colors */}
+                        {colors && colors.length > 0 && (
+                            <div className="mb-8">
+                                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Select Color</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {colors.map((color, idx) => (
+                                        <button
+                                            key={idx}
+                                            onClick={() => setSelectedColor(color)}
+                                            className={`px-4 py-2 rounded-full border text-sm font-medium transition-all ${selectedColor === color
+                                                ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400'
+                                                : 'border-gray-200 text-gray-600 hover:border-gray-300 dark:border-gray-700 dark:text-gray-300'
+                                                }`}
+                                        >
+                                            {color}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         <div className="space-y-4 mb-8">
                             <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                                 <Truck className="w-5 h-5 text-green-500" />
-                                <span>Free shipping on orders over $50</span>
+                                <span>Free shipping on orders over $100</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
                                 <ShieldCheck className="w-5 h-5 text-blue-500" />
@@ -186,7 +267,7 @@ const ProductDetailsPage = () => {
                                 >-</button>
                                 <span className="px-4 font-bold min-w-[3rem] text-center dark:text-white">{quantity}</span>
                                 <button
-                                    onClick={() => setQuantity(quantity + 1)}
+                                    onClick={() => setQuantity(Math.min(stock || 99, quantity + 1))}
                                     className="px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                                 >+</button>
                             </div>
@@ -194,17 +275,28 @@ const ProductDetailsPage = () => {
                             <Button
                                 onClick={handleAddToCart}
                                 isLoading={addingToCart}
+                                disabled={stock === 0}
                                 className="flex-1 flex items-center justify-center gap-2 py-3 px-6 text-lg"
                             >
                                 <ShoppingCart className="w-5 h-5" />
-                                Add to Cart
+                                {stock > 0 ? 'Add to Cart' : 'Out of Stock'}
                             </Button>
+                            <button
+                                onClick={handleAddToWishlist}
+                                className="p-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                                title="Add to Wishlist"
+                            >
+                                <Heart className="w-6 h-6" />
+                            </button>
                         </div>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
-        </PageWrapper>
+
+            <ProductReviews productId={id} />
+        </PageWrapper >
     );
 };
 
 export default ProductDetailsPage;
+

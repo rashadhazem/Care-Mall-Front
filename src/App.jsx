@@ -37,6 +37,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminStores from './pages/admin/AdminStores';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminCategories from './pages/admin/AdminCategories';
+import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { Helmet } from 'react-helmet-async';
@@ -107,6 +108,7 @@ function App() {
                         <Route path="stores" element={<AdminStores />} />
                         <Route path="products" element={<AdminProducts />} />
                         <Route path="categories" element={<AdminCategories />} />
+                        <Route path="orders" element={<AdminOrders />} />
                         <Route path="users" element={<AdminUsers />} />
                     </Route>
                 </Route>
