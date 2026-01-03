@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useMemo } from 'react';
 import AdminTable from '../../components/admin/AdminTable';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -59,19 +59,16 @@ const AdminProducts = () => {
         fetchInitialData();
     }, [currentPage]);
 
-    // Search Effect
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            if (searchQuery) {
-                if (currentPage === 1) fetchProducts(1);
-                else setCurrentPage(1);
-            } else {
-                if (currentPage === 1) fetchProducts(1);
-                else setCurrentPage(1);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
+   const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+
+    const q = searchQuery.toLowerCase();
+
+    return products.filter(product =>
+        product.title?.toLowerCase().includes(q) ||
+        product.description?.toLowerCase().includes(q)
+    );
+}, [searchQuery, products]);
 
 
     const fetchInitialData = async () => {
@@ -92,10 +89,9 @@ const AdminProducts = () => {
     const fetchProducts = async (page = 1) => {
         setLoading(true);
         try {
-            const params = { page };
-            if (searchQuery) params.keyword = searchQuery;
+            
 
-            const res = await productsApi.getProducts(params);
+            const res = await productsApi.getProducts({page});
             setProducts(res.data.data || []);
             setTotalPages(res.data.paginationResult?.numberOfPages || 1);
             setCurrentPage(res.data.paginationResult?.currentPage || page);
@@ -339,7 +335,7 @@ const AdminProducts = () => {
 
             <AdminTable
                 columns={columns}
-                data={products}
+                data={filteredProducts}
                 actions={actions}
                 isLoading={loading}
                 currentPage={currentPage}

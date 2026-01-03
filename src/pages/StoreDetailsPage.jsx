@@ -61,7 +61,7 @@ const StoreDetailsPage = () => {
                 // Try passing store ID first? Or Name? 
                 // StoresPage used name: store=${encodeURIComponent(store.name)}
                 // So we will use store name.
-                const productsRes = await productsApi.getProducts({ store: store.name });
+                const productsRes = await productsApi.getProducts({ store: store._id });
                 setProducts(productsRes.data.data || []);
             } catch (error) {
                 console.error("Error fetching store products:", error);
