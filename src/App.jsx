@@ -42,6 +42,7 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminUsers from './pages/admin/AdminUsers';
+import AdminBrands from './pages/admin/AdminBrands';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { Helmet } from 'react-helmet-async';
 import ErrorBoundary from './components/ui/ErrorBoundary';
@@ -116,7 +117,9 @@ function App() {
                         <Route path="products" element={<AdminProducts />} />
                         <Route path="categories" element={<AdminCategories />} />
                         <Route path="orders" element={<AdminOrders />} />
+                        <Route path="orders" element={<AdminOrders />} />
                         <Route path="users" element={<AdminUsers />} />
+                        <Route path="brands" element={<AdminBrands />} />
 
                     </Route>
                 </Route>

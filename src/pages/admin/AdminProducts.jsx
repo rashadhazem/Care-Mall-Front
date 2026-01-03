@@ -7,7 +7,7 @@ import Select from '../../components/ui/Select';
 import Textarea from '../../components/ui/Textarea';
 import { Search, Edit, Trash2, Plus, Image as ImageIcon } from 'lucide-react';
 import Swal from 'sweetalert2';
-import { productsApi, brandsApi, categoriesApi, subCategoriesApi } from '../../lib/api';
+import { productsApi, brandsApi, categoriesApi, subCategoriesApi, storesApi } from '../../lib/api';
 import { useTranslation } from 'react-i18next';
 
 const AdminProducts = () => {
@@ -28,6 +28,7 @@ const AdminProducts = () => {
         category: '',
         subcategories: [], // Selected subcategories IDs
         brand: '',
+        store: '', // Store ID
         imageCover: '',
         images: [],
         colors: '', // Comma separated string for UI
@@ -36,6 +37,7 @@ const AdminProducts = () => {
     // Data for Selects
     const [categories, setCategories] = useState([]);
     const [brands, setBrands] = useState([]);
+    const [stores, setStores] = useState([]);
     const [availableSubCategories, setAvailableSubCategories] = useState([]);
 
     // Pagination State
@@ -74,12 +76,14 @@ const AdminProducts = () => {
 
     const fetchInitialData = async () => {
         try {
-            const [catsRes, brandsRes] = await Promise.all([
+            const [catsRes, brandsRes, storesRes] = await Promise.all([
                 categoriesApi.getCategories(1),
-                brandsApi.getBrands()
+                brandsApi.getBrands(),
+                storesApi.getStores(1) // Assuming we fetch page 1 of stores or all, need to handle pagination if many stores
             ]);
             setCategories(catsRes.data.data || []);
             setBrands(brandsRes.data.data || []);
+            setStores(storesRes.data.data || []);
         } catch (error) {
             console.error("Error fetching initial data:", error);
         }
@@ -138,6 +142,7 @@ const AdminProducts = () => {
                 category: catId,
                 subcategories: product.subcategories ? product.subcategories.map(s => s._id || s) : [],
                 brand: product.brand?._id || product.brand || '',
+                store: product.store?._id || product.store || '',
                 imageCover: '', // Keep empty unless changed
                 images: [],
                 colors: product.colors ? product.colors.join(', ') : '',
@@ -146,7 +151,7 @@ const AdminProducts = () => {
             setEditingProduct(null);
             setFormData({
                 title: '', description: '', price: '', priceAfterDiscount: '', quantity: '',
-                category: '', subcategories: [], brand: '', imageCover: '', images: [], colors: ''
+                category: '', subcategories: [], brand: '', store: '', imageCover: '', images: [], colors: ''
             });
             setAvailableSubCategories([]);
         }
@@ -193,8 +198,8 @@ const AdminProducts = () => {
 
     const handleSave = async () => {
         // Validation
-        if (!formData.title || !formData.price || !formData.category || !formData.quantity || !formData.description) {
-            Swal.fire(t('error'), 'Please fill in all required fields (Title, Description, Price, Quantity, Category)', 'error');
+        if (!formData.title || !formData.price || !formData.category || !formData.quantity || !formData.description || !formData.store) {
+            Swal.fire(t('error'), 'Please fill in all required fields (Title, Description, Price, Quantity, Category, Store)', 'error');
             return;
         }
 
@@ -204,6 +209,7 @@ const AdminProducts = () => {
         fd.append('price', formData.price);
         fd.append('quantity', formData.quantity);
         fd.append('category', formData.category);
+        fd.append('store', formData.store);
 
         if (formData.priceAfterDiscount) fd.append('priceAfterDiscount', formData.priceAfterDiscount);
         if (formData.brand) fd.append('brand', formData.brand);
@@ -294,6 +300,7 @@ const AdminProducts = () => {
         },
         { header: t('price'), accessor: 'price', render: (p) => `$${p.price}` },
         { header: 'Qty', accessor: 'quantity' },
+        { header: 'Store', accessor: 'store', render: (p) => p.store?.name || p.store || '-' },
         { header: 'Brand', accessor: 'brand', render: (p) => p.brand?.name || p.brand || '-' },
     ];
 
@@ -398,6 +405,17 @@ const AdminProducts = () => {
                         </div>
 
                         <div className="space-y-4">
+                            <Select
+                                label="Store"
+                                value={formData.store}
+                                onChange={(e) => setFormData({ ...formData, store: e.target.value })}
+                            >
+                                <option value="">Select Store</option>
+                                {stores.map(s => (
+                                    <option key={s._id} value={s._id}>{s.name} ({s.owner?.email || 'No Owner'})</option>
+                                ))}
+                            </Select>
+
                             <Select
                                 label={t('category')}
                                 value={formData.category}
