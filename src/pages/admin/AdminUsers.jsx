@@ -233,10 +233,7 @@ const AdminUsers = () => {
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
-                        <Plus size={20} />
-                        {t('add_user')}
-                    </Button>
+                    
                 </div>
             </div>
 

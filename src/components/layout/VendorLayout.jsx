@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Sun, Moon, LogOut, Package, ShoppingBag, MessageSquare, Menu, X, User } from 'lucide-react';
+import { LayoutDashboard, Sun, Moon, LogOut, Package, ShoppingBag, MessageSquare, Menu, X, User, UserCog } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useTranslation } from 'react-i18next'; // Import
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
 import Button from '../ui/Button';
@@ -9,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { socketService } from '../../lib/socketService';
 
 const VendorLayout = () => {
+    const { t } = useTranslation(); // Init
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
@@ -51,7 +53,7 @@ const VendorLayout = () => {
                 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
             `}>
                 <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center">
-                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">Vendor Portal</h2>
+                    <h2 className="text-xl font-bold text-gray-800 dark:text-white">{t('vendor_portal')}</h2>
                     <button onClick={() => setSidebarOpen(false)} className="md:hidden p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
                         <X size={20} className="text-gray-500" />
                     </button>
@@ -59,19 +61,23 @@ const VendorLayout = () => {
                 <nav className="p-4 space-y-2">
                     <Link to="/vendor/dashboard" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('dashboard') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
                         <LayoutDashboard size={20} />
-                        Dashboard
+                        {t('dashboard')}
                     </Link>
                     <Link to="/vendor/products" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('products') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
                         <Package size={20} />
-                        My Products
+                        {t('my_products')}
                     </Link>
                     <Link to="/vendor/orders" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('orders') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
                         <ShoppingBag size={20} />
-                        Orders
+                        {t('orders')}
                     </Link>
                     <Link to="/vendor/chat" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('chat') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
                         <MessageSquare size={20} />
-                        Customer Chats
+                        {t('customer_chats')}
+                    </Link>
+                    <Link to="/vendor/profile" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('profile') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
+                        <UserCog size={20} />
+                        {t('myProfile')}
                     </Link>
                 </nav>
 
@@ -113,7 +119,7 @@ const VendorLayout = () => {
                     <button onClick={() => setSidebarOpen(true)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
                         <Menu size={24} className="text-gray-600 dark:text-gray-300" />
                     </button>
-                    <span className="font-semibold text-gray-800 dark:text-white">Vendor Portal</span>
+                    <span className="font-semibold text-gray-800 dark:text-white">{t('vendor_portal')}</span>
                     <div className="w-10"></div> {/* Spacer for centering */}
                 </header>
 
@@ -121,7 +127,7 @@ const VendorLayout = () => {
                     <Outlet />
                 </div>
             </div>
-        </div>
+        </div >
     );
 };
 

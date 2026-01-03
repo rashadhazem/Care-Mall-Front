@@ -12,7 +12,8 @@ import {
     Sun,
     Moon,
     Tags,
-    Package
+    Package,
+    UserCog
 } from 'lucide-react';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
@@ -40,6 +41,7 @@ const AdminLayout = () => {
         { path: '/admin/brands', label: 'Brands', icon: <Tags size={20} /> },
         { path: '/admin/orders', label: 'Orders', icon: <Package size={20} /> },
         { path: '/admin/users', label: 'Users', icon: <Users size={20} /> },
+        { path: '/admin/profile', label: 'Profile', icon: <UserCog size={20} /> },
     ];
 
     return (

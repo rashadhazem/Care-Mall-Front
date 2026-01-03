@@ -68,11 +68,11 @@ const VendorChat = () => {
         const fetchMessages = async () => {
             setLoadingMessages(true);
             try {
-                const res = await chatApi.getAllMessages(selectedChat._id);
+                const res = await chatApi.getMessages(selectedChat._id);
                 // Assuming res.data.data contains array of messages
                 setMessages(res.data.data || res.data || []);
                 // join socket room for this conversation
-                try { socketService.joinChat(selectedChat._id); } catch (e) { }
+                try { socketService.emit('joinChat', selectedChat._id); } catch (e) { }
             } catch (error) {
                 console.error("Error fetching messages:", error);
             } finally {
@@ -106,6 +106,11 @@ const VendorChat = () => {
         };
     }, [selectedChat]);
 
+    // Scroll to bottom
+    useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, [messages]);
+
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !selectedChat?._id) return;
@@ -137,8 +142,8 @@ const VendorChat = () => {
                 import('sweetalert2').then(Swal => {
                     Swal.default.fire({
                         icon: 'error',
-                        title: 'Message Failed',
-                        text: response?.message || 'Could not send message. Please try again.',
+                        title: t('message_failed'),
+                        text: response?.message || t('retry_message'),
                         toast: true,
                         position: 'top-end',
                         showConfirmButton: false,
@@ -189,17 +194,17 @@ const VendorChat = () => {
             <div className="w-80 border-r dark:border-gray-700 flex flex-col">
                 <div className="p-4 border-b dark:border-gray-700">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-xl font-bold dark:text-white">Messages</h2>
+                        <h2 className="text-xl font-bold dark:text-white">{t('messages')}</h2>
                         <span className={`text-xs flex items-center gap-1 ${isSocketConnected ? 'text-green-600' : 'text-red-500'}`}>
                             <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
-                            {isSocketConnected ? 'Live' : 'Offline'}
+                            {isSocketConnected ? t('live') : t('offline')}
                         </span>
                     </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search chats..."
+                            placeholder={t('search_chats')}
                             className="w-full pl-10 pr-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
                         />
                     </div>
@@ -207,7 +212,7 @@ const VendorChat = () => {
 
                 <div className="flex-1 overflow-y-auto">
                     {chats.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">No chats found</div>
+                        <div className="p-4 text-center text-gray-500">{t('no_chats')}</div>
                     ) : (
                         chats.map(chat => (
                             <div
@@ -223,7 +228,7 @@ const VendorChat = () => {
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <p className="text-sm text-gray-500 truncate dark:text-gray-400">
-                                        {chat.lastMessage?.content || "Click to view messages"}
+                                        {chat.lastMessage?.content || t('click_to_view')}
                                     </p>
                                 </div>
                             </div>
@@ -256,7 +261,7 @@ const VendorChat = () => {
                                     <Loader2 className="animate-spin text-gray-400" />
                                 </div>
                             ) : messages.length === 0 ? (
-                                <div className="text-center text-gray-500 mt-10">No messages yet.</div>
+                                <div className="text-center text-gray-500 mt-10">{t('no_conversations')}</div>
                             ) : (
                                 messages.map((msg) => {
                                     // Determine if message is mine - convert to strings for proper comparison

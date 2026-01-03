@@ -60,7 +60,7 @@ const Home = () => {
                     >
                         {t("welcome")}
                         <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-                            Ultimate Shopping
+                            {t("ultimate_shopping")}
                         </span>
                     </motion.h1>
                     <motion.p

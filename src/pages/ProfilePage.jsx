@@ -3,10 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { usersApi } from '../lib/api';
 import PageWrapper from '../components/ui/PageWrapper';
 import Button from '../components/ui/Button';
-import { User, Mail, Phone, Calendar, Shield, Edit, Save, X } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Shield, Edit, Save, X, Lock } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useDispatch } from 'react-redux';
-import { checkAuth } from '../store/slices/authSlice';
+import { checkAuth, loginSuccess } from '../store/slices/authSlice';
 
 const ProfilePage = () => {
     const { t } = useTranslation();
@@ -16,20 +16,31 @@ const ProfilePage = () => {
     const [formData, setFormData] = useState({
         name: '',
         phone: '',
-        address: ''
+        address: '',
+        email: ''
     });
+
+    // Password State
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        password: '',
+        passwordConfirm: ''
+    });
+    const [passwordLoading, setPasswordLoading] = useState(false);
+
     const dispatch = useDispatch();
 
     const fetchUserProfile = async () => {
         try {
             const res = await usersApi.loggedInUser();
             const userData = res.data.data;
-            console.log("userData",userData);
+            console.log("userData", userData);
             setUser(userData);
             setFormData({
                 name: userData.name || '',
                 phone: userData.phone || '',
-                address: userData.address || ''
+                address: userData.address || '',
+                email: userData.email || ''
             });
         } catch (error) {
             console.error('Error fetching profile:', error);
@@ -51,6 +62,10 @@ const ProfilePage = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    const handlePasswordChangeInput = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
     const handleUpdate = async () => {
         try {
             setLoading(true);
@@ -58,8 +73,8 @@ const ProfilePage = () => {
 
             Swal.fire({
                 icon: 'success',
-                title: t('success') || 'Success',
-                text: t('profileUpdated') || 'Profile updated successfully',
+                title: t('success'),
+                text: t('profileUpdated'),
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -79,6 +94,50 @@ const ProfilePage = () => {
         }
     };
 
+    const handlePasswordUpdate = async (e) => {
+        e.preventDefault();
+        if (passwordData.password !== passwordData.passwordConfirm) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: t('passwordMismatch'),
+            });
+            return;
+        }
+
+        try {
+            setPasswordLoading(true);
+            const res = await usersApi.changeMyPassword({
+                currentPassword: passwordData.currentPassword,
+                password: passwordData.password,
+                passwordConfirm: passwordData.passwordConfirm
+            });
+
+            if (res.data.token) {
+                dispatch(loginSuccess(res.data.token));
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: t('success'),
+                text: t('passwordChangedSuccess'),
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            setPasswordData({ currentPassword: '', password: '', passwordConfirm: '' });
+        } catch (error) {
+            console.error('Error changing password:', error);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: error.response?.data?.message || t('passwordChangedError'),
+            });
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
+
     if (loading && !user) {
         return (
             <div className="flex justify-center items-center min-h-[60vh]">
@@ -89,7 +148,9 @@ const ProfilePage = () => {
 
     return (
         <PageWrapper className="py-10">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+                {/* Main Profile Card */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden">
 
                     {/* Header Background */}
@@ -111,7 +172,7 @@ const ProfilePage = () => {
                                     className="gap-2"
                                 >
                                     <Edit size={16} />
-                                    {t('editProfile') || 'Edit Profile'}
+                                    {t('editProfile')}
                                 </Button>
                             )}
                         </div>
@@ -132,14 +193,14 @@ const ProfilePage = () => {
                             {/* Personal Info */}
                             <div className="space-y-6">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white border-b pb-2 border-gray-200 dark:border-gray-700">
-                                    {t('personalInfo') || 'Personal Information'}
+                                    {t('personalInfo')}
                                 </h3>
 
                                 <div className="space-y-4">
                                     {/* Name Field */}
                                     <div className="group">
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-                                            <User size={16} /> {t('fullName') || 'Full Name'}
+                                            <User size={16} /> {t('fullName')}
                                         </label>
                                         {isEditing ? (
                                             <input
@@ -159,7 +220,7 @@ const ProfilePage = () => {
                                     {/* Email Field (Read Only) */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-                                            <Mail size={16} /> {t('email') || 'Email'}
+                                            <Mail size={16} /> {t('email')}
                                         </label>
                                         <p className="text-gray-900 dark:text-gray-200 font-medium pl-6">
                                             {user?.email}
@@ -169,7 +230,7 @@ const ProfilePage = () => {
                                     {/* Phone Field */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-                                            <Phone size={16} /> {t('phone') || 'Phone'}
+                                            <Phone size={16} /> {t('phone')}
                                         </label>
                                         {isEditing ? (
                                             <input
@@ -190,7 +251,7 @@ const ProfilePage = () => {
                                     {/* Joined Date */}
                                     <div>
                                         <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1 flex items-center gap-2">
-                                            <Calendar size={16} /> {t('joinedDate') || 'Joined Date'}
+                                            <Calendar size={16} /> {t('joinedDate')}
                                         </label>
                                         <p className="text-gray-900 dark:text-gray-200 font-medium pl-6">
                                             {new Date(user?.createdAt).toLocaleDateString()}
@@ -202,7 +263,7 @@ const ProfilePage = () => {
                             {/* Contact/Address Info */}
                             <div className="space-y-6">
                                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white border-b pb-2 border-gray-200 dark:border-gray-700">
-                                    {t('address') || 'Address'}
+                                    {t('address')}
                                 </h3>
 
                                 <div className="space-y-4">
@@ -242,7 +303,7 @@ const ProfilePage = () => {
                                     className="gap-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                                 >
                                     <X size={18} />
-                                    {t('cancel') || 'Cancel'}
+                                    {t('cancel')}
                                 </Button>
                                 <Button
                                     variant="primary"
@@ -251,11 +312,73 @@ const ProfilePage = () => {
                                     disabled={loading}
                                 >
                                     <Save size={18} />
-                                    {loading ? 'Saving...' : (t('saveChanges') || 'Save Changes')}
+                                    {loading ? 'Saving...' : t('saveChanges')}
                                 </Button>
                             </div>
                         )}
                     </div>
+                </div>
+
+                {/* Password Change Section */}
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden p-8">
+                    <h3 className="text-xl font-semibold text-gray-900 dark:text-white border-b pb-4 border-gray-200 dark:border-gray-700 mb-6 flex items-center gap-2">
+                        <Lock size={20} className="text-primary-600" />
+                        {t('securitySettings')}
+                    </h3>
+
+                    <form onSubmit={handlePasswordUpdate}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('currentPassword')}
+                                </label>
+                                <input
+                                    type="password"
+                                    name="currentPassword"
+                                    value={passwordData.currentPassword}
+                                    onChange={handlePasswordChangeInput}
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('newPassword')}
+                                </label>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    value={passwordData.password}
+                                    onChange={handlePasswordChangeInput}
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    {t('confirmPassword')}
+                                </label>
+                                <input
+                                    type="password"
+                                    name="passwordConfirm"
+                                    value={passwordData.passwordConfirm}
+                                    onChange={handlePasswordChangeInput}
+                                    required
+                                    className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="mt-6 flex justify-end">
+                            <Button
+                                type="submit"
+                                variant="primary"
+                                disabled={passwordLoading}
+                            >
+                                {passwordLoading ? '...' : t('changePassword')}
+                            </Button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </PageWrapper>

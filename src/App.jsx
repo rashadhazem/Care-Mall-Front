@@ -108,7 +108,7 @@ function App() {
                         <Route path="products" element={<VendorProducts />} />
                         <Route path="orders" element={<VendorOrders />} />
                         <Route path="chat" element={<VendorChat />} />
-
+                        <Route path="profile" element={<ProfilePage />} />
                     </Route>
                 </Route>
 
@@ -121,10 +121,9 @@ function App() {
                         <Route path="products" element={<AdminProducts />} />
                         <Route path="categories" element={<AdminCategories />} />
                         <Route path="orders" element={<AdminOrders />} />
-                        <Route path="orders" element={<AdminOrders />} />
                         <Route path="users" element={<AdminUsers />} />
                         <Route path="brands" element={<AdminBrands />} />
-
+                        <Route path="profile" element={<ProfilePage />} />
                     </Route>
                 </Route>
             </Routes>

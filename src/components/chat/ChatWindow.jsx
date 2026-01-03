@@ -154,8 +154,8 @@ const ChatWindow = () => {
                 // Alert User
                 Swal.fire({
                     icon: 'error',
-                    title: 'Message Failed',
-                    text: response?.message || 'Could not send message. Please try again.',
+                    title: t('message_failed'),
+                    text: response?.message || t('retry_message'),
                     toast: true,
                     position: 'top-end',
                     showConfirmButton: false,
@@ -176,7 +176,7 @@ const ChatWindow = () => {
         // Typically for a user, the 'store' field is populated.
         if (chat.store && chat.store.name) return chat.store.name;
         // Or if it's a direct user chat (less likely in this app structure)
-        return "Support Chat";
+        return t('support_chat');
     };
 
     if (!isAuthenticated) return null;
@@ -205,12 +205,12 @@ const ChatWindow = () => {
                             )}
                             <div>
                                 <h3 className="font-bold text-lg">
-                                    {view === 'list' ? 'My Messages' : getChatName(selectedChat)}
+                                    {view === 'list' ? t('my_messages') : getChatName(selectedChat)}
                                 </h3>
                                 {view === 'chat' && (
                                     <span className={`text-xs flex items-center gap-1 ${isSocketConnected ? 'text-blue-100' : 'text-red-200'}`}>
                                         <span className={`w-2 h-2 rounded-full inline-block ${isSocketConnected ? 'bg-green-400' : 'bg-red-400 animate-pulse'}`}></span>
-                                        {isSocketConnected ? 'Connected' : 'Disconnected'}
+                                        {isSocketConnected ? t('connected') : t('disconnected')}
                                     </span>
                                 )}
                             </div>
@@ -227,14 +227,14 @@ const ChatWindow = () => {
                         {view === 'list' && (
                             <div className="h-full overflow-y-auto">
                                 {loading ? (
-                                    <div className="p-10 text-center text-gray-500">Loading chats...</div>
+                                    <div className="p-10 text-center text-gray-500">{t('loading_chats')}</div>
                                 ) : chats.length === 0 ? (
                                     <div className="p-8 text-center text-gray-500 flex flex-col items-center">
                                         <div className="w-16 h-16 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
                                             <MessageCircle className="w-8 h-8 text-gray-400" />
                                         </div>
-                                        <p>No conversations yet.</p>
-                                        <p className="text-sm mt-2">Visit a store page to start chatting!</p>
+                                        <p>{t('no_conversations')}</p>
+                                        <p className="text-sm mt-2">{t('start_chatting')}</p>
                                     </div>
                                 ) : (
                                     <div className="divide-y divide-gray-100 dark:divide-gray-800">
