@@ -5,6 +5,8 @@ import Footer from './components/layout/Footer';
 import Home from './pages/Home';
 import Contact from './pages/contact';
 import About from './pages/about';
+import Terms from './pages/terms';
+import Privacy from './pages/privacy';
 
 // Auth Imports
 
@@ -77,6 +79,8 @@ function App() {
                     <Route path="cart" element={<CartPage />} />
                     <Route path="about" element={<About />} />
                     <Route path="contact" element={<Contact />} />
+                    <Route path="terms" element={<Terms />} />
+                    <Route path="privacy" element={<Privacy />} />
 
                     {/* Protected User Routes */}
                     <Route element={<ProtectedRoute />}>

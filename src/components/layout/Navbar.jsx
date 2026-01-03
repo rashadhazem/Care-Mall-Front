@@ -170,24 +170,23 @@ const Navbar = () => {
                                 </Link>
                             </div>
                         )}
+                    </div>
 
-
-                        {/* Mobile menu button */}
-                        <div className="md:hidden flex items-center gap-2">
-                            {(!isAuthenticated || role === 'user') && (
-                                <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 p-2">
-                                    <ShoppingCart size={24} />
-                                    {items.length > 0 && (
-                                        <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                                            {items.length}
-                                        </span>
-                                    )}
-                                </Link>
-                            )}
-                            <Button variant="ghost" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                                <Menu size={24} />
-                            </Button>
-                        </div>
+                    {/* Mobile menu button - separate from desktop menu */}
+                    <div className="md:hidden flex items-center gap-2">
+                        {(!isAuthenticated || role === 'user') && (
+                            <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 p-2">
+                                <ShoppingCart size={24} />
+                                {items.length > 0 && (
+                                    <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
+                                        {items.length}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
+                        <Button variant="ghost" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                            <Menu size={24} />
+                        </Button>
                     </div>
                 </div>
             </div>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Send, User, Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { chatApi } from '../../lib/api';
+import { socketService } from '../../lib/socketService';
 
 const VendorChat = () => {
     const [chats, setChats] = useState([]);
@@ -12,7 +13,30 @@ const VendorChat = () => {
     const [loadingMessages, setLoadingMessages] = useState(false);
 
     // Get current user to determine message ownership
-    const { user } = useSelector(state => state.auth);
+    const { user, isAuthenticated } = useSelector(state => state.auth);
+    const [isSocketConnected, setIsSocketConnected] = useState(false);
+
+    // Ensure socket connection for vendor
+    useEffect(() => {
+        if (isAuthenticated) {
+            const token = localStorage.getItem('token');
+            if (token) {
+                socketService.connect(null, token).then((connected) => {
+                    setIsSocketConnected(connected);
+                    if (!connected) {
+                        console.error('[VendorChat] Failed to connect to chat server');
+                    }
+                });
+            }
+        }
+
+        // Check connection status periodically
+        const interval = setInterval(() => {
+            setIsSocketConnected(socketService.getConnectionStatus());
+        }, 2000);
+
+        return () => clearInterval(interval);
+    }, [isAuthenticated]);
 
     // Fetch all chats for the logged-in vendor
     useEffect(() => {
@@ -47,6 +71,8 @@ const VendorChat = () => {
                 const res = await chatApi.getAllMessages(selectedChat._id);
                 // Assuming res.data.data contains array of messages
                 setMessages(res.data.data || res.data || []);
+                // join socket room for this conversation
+                try { socketService.joinChat(selectedChat._id); } catch (e) { }
             } catch (error) {
                 console.error("Error fetching messages:", error);
             } finally {
@@ -56,38 +82,97 @@ const VendorChat = () => {
 
         fetchMessages();
 
+        // listen for incoming messages on socket
+        const handleReceive = (msg) => {
+            // msg is the full message object
+            const chatId = msg.chat?._id || msg.chat;
+            if (chatId === selectedChat._id) {
+                setMessages((prev) => {
+                    // Prevent duplicates
+                    if (prev.some(m => m._id === msg._id)) return prev;
+                    return [...prev, msg];
+                });
+            }
+        };
+
+        socketService.on('newMessage', handleReceive);
+
         // Optional: Set up polling or socket listener here for real-time
+
+        // cleanup listeners when chat changes
+        return () => {
+            // socketService.leaveChat(selectedChat._id); // Not strictly implemented/needed on backend
+            socketService.off('newMessage', handleReceive);
+        };
     }, [selectedChat]);
 
     const handleSendMessage = async (e) => {
         e.preventDefault();
         if (!newMessage.trim() || !selectedChat?._id) return;
 
-        try {
-            const res = await chatApi.sendMessage({
-                chatId: selectedChat._id,
-                content: newMessage
-            });
+        const currentMessage = newMessage;
+        const tempId = `local-${Date.now()}`;
 
-            // Add the new message to the list
-            // Ensure we handle the response structure correctly
-            const sentMessage = res.data.data || res.data;
-            setMessages([...messages, sentMessage]);
-            setNewMessage("");
+        // Optimistic local update first
+        const optimistic = {
+            _id: tempId,
+            content: currentMessage,
+            sender: user,
+            chat: selectedChat._id,
+            createdAt: new Date().toISOString(),
+            isOptimistic: true
+        };
+        setMessages((prev) => [...prev, optimistic]);
+        setNewMessage("");
 
-        } catch (error) {
-            console.error("Error sending message:", error);
-        }
+        // Send via socket for realtime delivery
+        socketService.sendMessage(selectedChat._id, currentMessage, (response) => {
+            if (response?.status !== 'ok') {
+                console.error("Socket sendMessage failed:", response);
+
+                // Remove optimistic message
+                setMessages((prev) => prev.filter(m => m._id !== tempId));
+
+                // Show error to user
+                import('sweetalert2').then(Swal => {
+                    Swal.default.fire({
+                        icon: 'error',
+                        title: 'Message Failed',
+                        text: response?.message || 'Could not send message. Please try again.',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                });
+
+                // Restore message to input
+                setNewMessage(currentMessage);
+            } else {
+                // Success - Remove optimistic message, the 'newMessage' socket event will add the real one
+                setMessages((prev) => prev.filter(m => m._id !== tempId));
+            }
+        });
     };
 
-    // Helper to get the display name of the other participant
+    // Helper to get the display name of the other participant (customer)
     const getChatName = (chat) => {
-        // Implementation depends on backend Chat model.
-        // Assuming chat has 'user' or 'store' fields populated, or 'members' array.
-        // For a vendor, the other party is likely the 'user' (customer).
-        if (chat.user && chat.user.name) return chat.user.name;
-        // Fallback or other logic
-        return `Chat #${chat._id.substring(0, 6)}`;
+        // For vendor, the other party is likely the customer (not the owner)
+        // Find participant that is NOT the current vendor (user)
+        if (chat.participants && Array.isArray(chat.participants)) {
+            const otherParticipant = chat.participants.find(p => {
+                const pId = (p._id || p).toString();
+                return pId !== user?._id;
+            });
+            if (otherParticipant && otherParticipant.name) {
+                return otherParticipant.name;
+            }
+        }
+        // Fallback to store name if available
+        if (chat.store && chat.store.name) {
+            return `Customer (${chat.store.name})`;
+        }
+        return `Chat #${chat._id?.substring(0, 6) || 'unknown'}`;
     };
 
     if (loading) {
@@ -103,7 +188,13 @@ const VendorChat = () => {
             {/* Sidebar List */}
             <div className="w-80 border-r dark:border-gray-700 flex flex-col">
                 <div className="p-4 border-b dark:border-gray-700">
-                    <h2 className="text-xl font-bold dark:text-white mb-4">Messages</h2>
+                    <div className="flex items-center justify-between mb-4">
+                        <h2 className="text-xl font-bold dark:text-white">Messages</h2>
+                        <span className={`text-xs flex items-center gap-1 ${isSocketConnected ? 'text-green-600' : 'text-red-500'}`}>
+                            <span className={`w-2 h-2 rounded-full ${isSocketConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}></span>
+                            {isSocketConnected ? 'Live' : 'Offline'}
+                        </span>
+                    </div>
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <input
@@ -168,15 +259,16 @@ const VendorChat = () => {
                                 <div className="text-center text-gray-500 mt-10">No messages yet.</div>
                             ) : (
                                 messages.map((msg) => {
-                                    // Determine if message is mine
-                                    // msg.sender might be populated object or just ID
-                                    const isMe = (msg.sender?._id === user?._id) || (msg.sender === user?._id);
+                                    // Determine if message is mine - convert to strings for proper comparison
+                                    const senderId = (msg.sender?._id || msg.sender || '').toString();
+                                    const myId = (user?._id || '').toString();
+                                    const isMe = senderId === myId;
 
                                     return (
                                         <div key={msg._id || msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                                             <div className={`max-w-[70%] p-3 rounded-2xl ${isMe
-                                                    ? 'bg-blue-600 text-white rounded-br-none'
-                                                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-none shadow-sm'
+                                                ? 'bg-blue-600 text-white rounded-br-none'
+                                                : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-none shadow-sm'
                                                 }`}>
                                                 <p className="text-sm">{msg.content}</p>
                                                 <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>

@@ -165,7 +165,7 @@ export const  chatApi={
   createChat: (chatData) => api.post('/chats', chatData),//{user1Id,storeId}
   chatsForloggedUser: () => api.get('/chats'),
   sendMessage:(messageData)=>api.post('/chats/message',messageData),//{chatId,content}
-  getAllMessages:(chatId)=>api.get(`/chats/messages/${chatId}`),
+  getAllMessages:(chatId)=>api.get(`/chats/${chatId}/messages`),
     
 }
 
