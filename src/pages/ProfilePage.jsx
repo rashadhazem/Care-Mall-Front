@@ -23,7 +23,8 @@ const ProfilePage = () => {
     const fetchUserProfile = async () => {
         try {
             const res = await usersApi.loggedInUser();
-            const userData = res.data.user;
+            const userData = res.data.data;
+            console.log("userData",userData);
             setUser(userData);
             setFormData({
                 name: userData.name || '',

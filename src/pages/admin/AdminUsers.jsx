@@ -16,7 +16,8 @@ const AdminUsers = () => {
     const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
-    const [formData, setFormData] = useState({ name: '', email: '', role: 'user', password: '' });
+    // include all fields backend accepts: slug, phone, image, role, active, isVerified
+    const [formData, setFormData] = useState({ name: '', email: '', role: '', password: '', slug: '', phone: '', image: '', active: true, isVerified: false });
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -59,12 +60,17 @@ const AdminUsers = () => {
             setFormData({
                 name: user.name,
                 email: user.email,
-                role: user.role,
-                password: ''
+                role: user.role || 'user',
+                password: '',
+                slug: user.slug || '',
+                phone: user.phone || '',
+                image: user.image?.url || user.image || '',
+                active: user.active !== undefined ? user.active : true,
+                isVerified: user.isVerified || false
             });
         } else {
             setEditingUser(null);
-            setFormData({ name: '', email: '', role: 'user', password: '' });
+            setFormData({ name: '', email: '', role: '', password: '', slug: '', phone: '', image: '', active: true, isVerified: false });
         }
         setIsModalOpen(true);
     };
@@ -72,7 +78,7 @@ const AdminUsers = () => {
     const handleCloseModal = () => {
         setIsModalOpen(false);
         setEditingUser(null);
-        setFormData({ name: '', email: '', role: 'user', password: '' });
+        setFormData({ name: '', email: '', role: '', password: '' });
     };
 
     const handleSave = async () => {
@@ -83,31 +89,32 @@ const AdminUsers = () => {
 
         try {
             setSaving(true);
-            if (editingUser) {
-                const updateData = { ...formData };
-                if (!updateData.password) delete updateData.password;
+            const payload = { // only include fields allowed by backend
+                name: formData.name,
+                slug: formData.slug || undefined,
+                phone: formData.phone || undefined,
+                email: formData.email,
+                image: formData.image || undefined,
+                role: formData.role,
+                active: formData.active,
+                isVerified: formData.isVerified
+            };
 
-                await usersApi.updateUser(editingUser._id, updateData);
+            if (formData.password) payload.password = formData.password;
+
+            if (editingUser) {
+                await usersApi.updateUser(editingUser._id, payload);
                 Swal.fire(t('updated'), t('success'), 'success');
             } else {
-                const res = await fetch("http://localhost:8000/api/v1/users", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                if (!res.ok) throw new Error("Failed to create user");
-
+                await usersApi.createUser(payload);
                 Swal.fire(t('created'), t('success'), 'success');
             }
             handleCloseModal();
             fetchUsers(currentPage);
         } catch (error) {
             console.error("Error saving user:", error);
-            Swal.fire(t('error'), 'Failed to save user', 'error');
+            const msg = error.response?.data?.message || 'Failed to save user';
+            Swal.fire(t('error'), msg, 'error');
         } finally {
             setSaving(false);
         }
@@ -137,12 +144,12 @@ const AdminUsers = () => {
         });
     };
 
-    const toggleStatus = async (id, currentStatus) => {
-        const newStatus = currentStatus === 'active' ? 'banned' : 'active';
+    const toggleStatus = async (id, currentActive,email) => {
         try {
-            await usersApi.updateUser(id, { status: newStatus });
-            setUsers(prev => prev.map(u => u._id === id ? { ...u, status: newStatus } : u));
-            Swal.fire(t('success'), `User ${newStatus}`, 'success');
+            const newActive = !currentActive;
+            await usersApi.updateUser(id, { active: newActive ,email:email});
+            setUsers(prev => prev.map(u => u._id === id ? { ...u, active: newActive } : u));
+            Swal.fire(t('success'), `User ${newActive ? 'activated' : 'deactivated'}`, 'success');
         } catch (error) {
             console.error("Error updating status:", error);
             Swal.fire(t('error'), 'Failed to update status', 'error');
@@ -153,9 +160,13 @@ const AdminUsers = () => {
         {
             header: t('name'), accessor: 'name', render: (u) => (
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
-                        {u.name ? u.name[0]?.toUpperCase() : '?'}
-                    </div>
+                    {u.image || u.image?.url ? (
+                        <img src={u.image?.url || u.image} alt={u.name} className="w-8 h-8 rounded-full object-cover bg-gray-100" />
+                    ) : (
+                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold">
+                            {u.name ? u.name[0]?.toUpperCase() : '?'}
+                        </div>
+                    )}
                     <div>
                         <p className="font-medium text-gray-900 dark:text-white">{u.name}</p>
                         <p className="text-xs text-gray-500">{u.email}</p>
@@ -174,12 +185,15 @@ const AdminUsers = () => {
             )
         },
         {
-            header: t('status'), accessor: 'status', render: (u) => (
-                <span className={`flex items-center gap-1 text-sm ${u.status === 'active' ? 'text-green-600' : 'text-red-500'}`}>
-                    {u.status === 'active' ? <CheckCircle size={14} /> : <Ban size={14} />}
-                    {u.status}
-                </span>
-            )
+            header: t('status'), accessor: 'status', render: (u) => {
+                const isActive = u.active === undefined ? u.status === 'active' : u.active;
+                return (
+                    <span className={`flex items-center gap-1 text-sm ${isActive ? 'text-green-600' : 'text-red-500'}`}>
+                        {isActive ? <CheckCircle size={14} /> : <Ban size={14} />}
+                        {isActive ? 'active' : 'banned'}
+                    </span>
+                );
+            }
         },
         { header: t('joined'), accessor: 'createdAt', render: (u) => new Date(u.createdAt).toLocaleDateString() },
     ];
@@ -192,11 +206,11 @@ const AdminUsers = () => {
             <Button
                 variant="ghost"
                 size="sm"
-                className={user.status === 'active' ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}
-                onClick={() => toggleStatus(user._id, user.status)}
-                title={user.status === 'active' ? "Block" : "Unblock"}
+                className={(user.active === undefined ? user.status === 'active' : user.active) ? "text-orange-600 hover:text-orange-700 hover:bg-orange-50" : "text-green-600 hover:text-green-700 hover:bg-green-50"}
+                onClick={() => toggleStatus(user._id, (user.active === undefined ? user.status === 'active' : user.active),user.email)}
+                title={(user.active === undefined ? user.status === 'active' : user.active) ? "Block" : "Unblock"}
             >
-                {user.status === 'active' ? <Ban size={18} /> : <CheckCircle size={18} />}
+                {(user.active === undefined ? user.status === 'active' : user.active) ? <Ban size={18} /> : <CheckCircle size={18} />}
             </Button>
             <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete(user._id)} title={t('delete')}>
                 <Trash2 size={18} />
@@ -246,40 +260,73 @@ const AdminUsers = () => {
                     </>
                 }
             >
-                <div className="space-y-4">
-                    <Input
-                        label={t('name')}
-                        placeholder="Full Name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                    <Input
-                        label={t('email')}
-                        type="email"
-                        placeholder="user@example.com"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                    <Input
-                        label={t('password')}
-                        type="password"
-                        placeholder={editingUser ? "Leave blank to keep current" : t('password')}
-                        value={formData.password}
-                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    />
-                    <div>
-                        <Label className="block mb-1 text-sm font-medium">{t('role')}</Label>
-                        <select
-                            className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 outline-none"
-                            value={formData.role}
-                            onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                        >
-                            <option value="user">{t('user')}</option>
-                            <option value="vendor">{t('vendor')}</option>
-                            <option value="admin">{t('admin')}</option>
-                        </select>
+                        <div className="space-y-4">
+                        <Input
+                            label={t('name')}
+                            placeholder="Full Name"
+                            value={formData.name}
+                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        />
+                        <Input
+                            label={t('email')}
+                            type="email"
+                            placeholder="user@example.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        />
+                        <Input
+                            label={t('password')}
+                            type="password"
+                            placeholder={editingUser ? "Leave blank to keep current" : t('password')}
+                            value={formData.password}
+                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        />
+                        <div>
+                            <Label className="block mb-1 text-sm font-medium">{t('role')}</Label>
+                            <select
+                                className="w-full border rounded-lg px-3 py-2 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-primary-500 outline-none"
+                                value={formData.role}
+                                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                            >
+                                <option value="user">{t('user')}</option>
+                                <option value="vendor">{t('vendor')}</option>
+                                <option value="admin">{t('admin')}</option>
+                            </select>
+                        </div>
+
+                        <Input
+                            label="Phone"
+                            placeholder="Phone number"
+                            value={formData.phone}
+                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        />
+
+                        <Input
+                            label="Slug"
+                            placeholder="user-slug"
+                            value={formData.slug}
+                            onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                        />
+
+                        <Input
+                            label="Image URL"
+                            placeholder="https://..."
+                            value={formData.image}
+                            onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                        />
+
+                        <div className="flex gap-4 items-center">
+                            <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={!!formData.active} onChange={(e) => setFormData({ ...formData, active: e.target.checked })} className="accent-primary-600" />
+                                <span className="text-sm">Active</span>
+                            </label>
+
+                            <label className="flex items-center gap-2">
+                                <input type="checkbox" checked={!!formData.isVerified} onChange={(e) => setFormData({ ...formData, isVerified: e.target.checked })} className="accent-primary-600" />
+                                <span className="text-sm">Verified</span>
+                            </label>
+                        </div>
                     </div>
-                </div>
             </Modal>
         </div>
     );
