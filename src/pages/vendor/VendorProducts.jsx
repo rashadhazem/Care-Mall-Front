@@ -14,6 +14,7 @@ const VendorProducts = () => {
     const { t } = useTranslation();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
 
@@ -63,6 +64,7 @@ const VendorProducts = () => {
         setLoading(true);
         try {
             const res = await productsApi.getProducts({ page });
+            console.log("products", res.data.data);
             setProducts(res.data.data || []);
 
             if (res.data.paginationResult) {
@@ -100,7 +102,7 @@ const VendorProducts = () => {
 
     const handleOpenModal = async (product = null) => {
         if (product) {
-            console.log("the product is ",product);
+            console.log("the product is ", product);
             const catId = product.category?._id || product.category;
             if (catId) await fetchSubCategories(catId);
             setEditingProduct(product);
@@ -205,6 +207,7 @@ const VendorProducts = () => {
         }
 
         try {
+            setSaving(true);
             if (editingProduct) {
                 await productsApi.updateProduct(editingProduct._id, fd);
                 Swal.fire(t('updated'), t('product_updated_success'), 'success');
@@ -218,6 +221,8 @@ const VendorProducts = () => {
             console.error("Error saving product:", error);
             const msg = error.response?.data?.message || t('failed_to_save_product');
             Swal.fire(t('error'), msg, 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -238,7 +243,7 @@ const VendorProducts = () => {
                     setProducts(prev => prev.filter(p => p._id !== id));
                     Swal.fire(t('deleted'), t('product_deleted_success'), 'success');
                 } catch (error) {
-                    
+
                     Swal.fire(t('error admin only'), t('failed_to_delete_product'), 'error');
                 }
             }
@@ -249,7 +254,7 @@ const VendorProducts = () => {
         {
             header: t('product_title'), accessor: 'title', render: (p) => (
                 <div className="flex items-center gap-3">
-                    <img src={p.imageCover.url } alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                    <img src={p.imageCover.url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                     <div>
                         <p className="font-medium text-gray-900 dark:text-white" title={p.description}>{p.title}</p>
                         <p className="text-xs text-gray-500">{p.category?.name || p.category}</p>
@@ -309,8 +314,8 @@ const VendorProducts = () => {
                     title={editingProduct ? t('edit_product') : t('add_product')}
                     footer={
                         <>
-                            <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
-                            <Button onClick={handleSave}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
+                            <Button variant="ghost" onClick={handleCloseModal} disabled={saving}>{t('cancel')}</Button>
+                            <Button onClick={handleSave} isLoading={saving}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
                         </>
                     }
                     className="max-w-4xl"

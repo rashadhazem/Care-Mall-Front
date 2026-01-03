@@ -12,6 +12,7 @@ const AdminCategories = () => {
     const { t } = useTranslation();
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState(null);
     const [formData, setFormData] = useState({ name: '', image: '' });
@@ -78,6 +79,7 @@ const AdminCategories = () => {
             fd.append('image', formData.image);
         }
         try {
+            setSaving(true);
             if (editingCategory) {
                 const res = await categoriesApi.updateCategory(editingCategory._id, fd);
                 if (res.status === 200 || res.status === 201) {
@@ -92,6 +94,8 @@ const AdminCategories = () => {
         } catch (error) {
             console.error("Error saving category:", error);
             Swal.fire(t('error'), 'Failed to save category', 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -182,8 +186,8 @@ const AdminCategories = () => {
                 title={editingCategory ? t('edit_category') : t('add_category')}
                 footer={
                     <>
-                        <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
-                        <Button onClick={handleSave}>{editingCategory ? t('save') : t('add_new')}</Button>
+                        <Button variant="ghost" onClick={handleCloseModal} disabled={saving}>{t('cancel')}</Button>
+                        <Button onClick={handleSave} isLoading={saving}>{editingCategory ? t('save') : t('add_new')}</Button>
                     </>
                 }
             >

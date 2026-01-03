@@ -23,6 +23,7 @@ import CartPage from './pages/CartPage';
 import WishlistPage from './pages/WishlistPage';
 import OrdersPage from './pages/OrdersPage';
 import ProfilePage from './pages/ProfilePage';
+import StoreDetailsPage from './pages/StoreDetailsPage';
 
 // Vendor Imports
 import VendorLayout from './components/layout/VendorLayout';
@@ -69,6 +70,7 @@ function App() {
                 <Route path="/" element={<Layout />}>
                     <Route index element={<Home />} />
                     <Route path="stores" element={<StoresPage />} />
+                    <Route path="stores/:id" element={<StoreDetailsPage />} />
                     <Route path="products" element={<ProductsPage />} />
                     <Route path="products/:id" element={<ProductDetailsPage />} />
                     <Route path="cart" element={<CartPage />} />

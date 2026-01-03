@@ -124,12 +124,12 @@ const StoresPage = () => {
                             transition={{ duration: 0.3 }}
                         >
                             <Link
-                                to={`/products?store=${encodeURIComponent(store.name)}`}
+                                to={`/stores/${store._id || store.id}`}
                                 className="block h-full group bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700"
                             >
                                 <div className="h-48 overflow-hidden relative">
                                     <img
-                                        src={store.image || store.logo || '/placeholder-store.jpg'}
+                                        src={store.image.url || store.logo || '/placeholder-store.jpg'}
                                         alt={store.name}
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         onError={(e) => { e.target.src = '/placeholder-store.jpg'; }}

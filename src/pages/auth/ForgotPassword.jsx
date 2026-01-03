@@ -6,11 +6,11 @@ import { authAPI } from '../../lib/api';
 import { showToast } from '../../lib/toast';
 import Swal from 'sweetalert2';
 import Button from '../../components/ui/Button';
-
+import { useNavigate } from 'react-router-dom';
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
-
+  const navigate = useNavigate();
   const [step, setStep] = useState(1); // 1: send otp | 2: verify otp | 3: reset password
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -25,7 +25,7 @@ const ForgotPassword = () => {
 
     try {
       setLoading(true);
-      await authAPI.forgotPassword({ email });
+      await authAPI.forgotPassword(email );
       showToast('OTP sent to your email', 'success');
       setStep(2);
     } catch (err) {
@@ -42,7 +42,7 @@ const ForgotPassword = () => {
 
     try {
       setLoading(true);
-      await authAPI.verifyRestPasswordOtp({ email, otp });
+      await authAPI.verifyRestPasswordOtp({ email, resetCode:otp });
       showToast('OTP verified successfully', 'success');
       setStep(3);
     } catch (err) {
@@ -65,11 +65,11 @@ const ForgotPassword = () => {
       setLoading(true);
       await authAPI.resetPassword({
         email,
-        password,
-        confirmPassword,
+        newPassword:password,
       });
       showToast('Password reset successfully', 'success');
       setStep(1);
+      navigate('/login');
       setEmail('');
     } catch (err) {
       showToast(err.response?.data?.message || 'Failed to reset password', 'error');

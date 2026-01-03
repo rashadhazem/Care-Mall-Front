@@ -1,42 +1,102 @@
-import React, { useState } from 'react';
-import { Search, Send, User } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
-import { addMessage } from '../../store/slices/chatSlice';
+import React, { useState, useEffect } from 'react';
+import { Search, Send, User, Loader2 } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { chatApi } from '../../lib/api';
 
 const VendorChat = () => {
-    const [selectedChat, setSelectedChat] = useState("chat-1");
-    const [message, setMessage] = useState("");
-    const dispatch = useDispatch();
+    const [chats, setChats] = useState([]);
+    const [selectedChat, setSelectedChat] = useState(null);
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [loadingMessages, setLoadingMessages] = useState(false);
 
-    // Mock Chats
-    const chats = [
-        { id: "chat-1", user: "John Doe", lastMessage: "Is this available?", time: "2m", unread: 2 },
-        { id: "chat-2", user: "Jane Smith", lastMessage: "Thanks!", time: "1h", unread: 0 },
-        { id: "chat-3", user: "Alice Johnson", lastMessage: "When will it ship?", time: "3h", unread: 0 },
-    ];
+    // Get current user to determine message ownership
+    const { user } = useSelector(state => state.auth);
 
-    // Mock Messages for selected chat
-    // In real app, select from Redux store based on ID
-    const [localMessages, setLocalMessages] = useState([
-        { id: 1, content: "Hi, is this item in stock?", sender: "user", time: "10:00 AM" },
-        { id: 2, content: "Yes, we have plenty!", sender: "me", time: "10:05 AM" },
-        { id: 3, content: "Great, I'll order one.", sender: "user", time: "10:06 AM" },
-    ]);
+    // Fetch all chats for the logged-in vendor
+    useEffect(() => {
+        const fetchChats = async () => {
+            try {
+                const res = await chatApi.chatsForloggedUser();
+                // Assuming response structure, adjust if needed (e.g. res.data.data)
+                const chatList = res.data.data || res.data || [];
+                setChats(chatList);
 
-    const handleSendMessage = (e) => {
-        e.preventDefault();
-        if (!message.trim()) return;
-
-        const newItem = {
-            id: Date.now(),
-            content: message,
-            sender: "me",
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                // Auto-select first chat if available
+                if (chatList.length > 0 && !selectedChat) {
+                    setSelectedChat(chatList[0]);
+                }
+            } catch (error) {
+                console.error("Error fetching chats:", error);
+            } finally {
+                setLoading(false);
+            }
         };
 
-        setLocalMessages([...localMessages, newItem]);
-        setMessage("");
+        fetchChats();
+    }, []); // Run once on mount
+
+    // Fetch messages when a chat is selected
+    useEffect(() => {
+        if (!selectedChat?._id) return;
+
+        const fetchMessages = async () => {
+            setLoadingMessages(true);
+            try {
+                const res = await chatApi.getAllMessages(selectedChat._id);
+                // Assuming res.data.data contains array of messages
+                setMessages(res.data.data || res.data || []);
+            } catch (error) {
+                console.error("Error fetching messages:", error);
+            } finally {
+                setLoadingMessages(false);
+            }
+        };
+
+        fetchMessages();
+
+        // Optional: Set up polling or socket listener here for real-time
+    }, [selectedChat]);
+
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !selectedChat?._id) return;
+
+        try {
+            const res = await chatApi.sendMessage({
+                chatId: selectedChat._id,
+                content: newMessage
+            });
+
+            // Add the new message to the list
+            // Ensure we handle the response structure correctly
+            const sentMessage = res.data.data || res.data;
+            setMessages([...messages, sentMessage]);
+            setNewMessage("");
+
+        } catch (error) {
+            console.error("Error sending message:", error);
+        }
     };
+
+    // Helper to get the display name of the other participant
+    const getChatName = (chat) => {
+        // Implementation depends on backend Chat model.
+        // Assuming chat has 'user' or 'store' fields populated, or 'members' array.
+        // For a vendor, the other party is likely the 'user' (customer).
+        if (chat.user && chat.user.name) return chat.user.name;
+        // Fallback or other logic
+        return `Chat #${chat._id.substring(0, 6)}`;
+    };
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-[calc(100vh-2rem)]">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+            </div>
+        );
+    }
 
     return (
         <div className="flex h-[calc(100vh-2rem)] bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
@@ -55,74 +115,105 @@ const VendorChat = () => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
-                    {chats.map(chat => (
-                        <div
-                            key={chat.id}
-                            onClick={() => setSelectedChat(chat.id)}
-                            className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer border-b dark:border-gray-700/50 transition-colors ${selectedChat === chat.id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
-                        >
-                            <div className="flex justify-between items-start mb-1">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">{chat.user}</h3>
-                                <span className="text-xs text-gray-500">{chat.time}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <p className="text-sm text-gray-500 truncate dark:text-gray-400">{chat.lastMessage}</p>
-                                {chat.unread > 0 && (
-                                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full min-w-[20px] text-center">
-                                        {chat.unread}
+                    {chats.length === 0 ? (
+                        <div className="p-4 text-center text-gray-500">No chats found</div>
+                    ) : (
+                        chats.map(chat => (
+                            <div
+                                key={chat._id}
+                                onClick={() => setSelectedChat(chat)}
+                                className={`p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer border-b dark:border-gray-700/50 transition-colors ${selectedChat?._id === chat._id ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                            >
+                                <div className="flex justify-between items-start mb-1">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white">{getChatName(chat)}</h3>
+                                    <span className="text-xs text-gray-500">
+                                        {new Date(chat.updatedAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </span>
-                                )}
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <p className="text-sm text-gray-500 truncate dark:text-gray-400">
+                                        {chat.lastMessage?.content || "Click to view messages"}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
             </div>
 
             {/* Chat Area */}
             <div className="flex-1 flex flex-col bg-gray-50 dark:bg-gray-900">
-                {/* Chat Header */}
-                <div className="p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
-                        {selectedChat ? 'J' : '?'}
-                    </div>
-                    <div>
-                        <h3 className="font-bold text-gray-900 dark:text-white">John Doe</h3>
-                        <p className="text-xs text-green-500 flex items-center gap-1">
-                            <span className="w-2 h-2 bg-green-500 rounded-full"></span> Online
-                        </p>
-                    </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                    {localMessages.map((msg) => (
-                        <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[70%] p-3 rounded-2xl ${msg.sender === 'me' ? 'bg-blue-600 text-white rounded-br-none' : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-none shadow-sm'}`}>
-                                <p className="text-sm">{msg.content}</p>
-                                <p className={`text-[10px] mt-1 text-right ${msg.sender === 'me' ? 'text-blue-100' : 'text-gray-400'}`}>{msg.time}</p>
+                {selectedChat ? (
+                    <>
+                        {/* Chat Header */}
+                        <div className="p-4 bg-white dark:bg-gray-800 border-b dark:border-gray-700 flex items-center gap-3">
+                            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold">
+                                {getChatName(selectedChat).charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900 dark:text-white">
+                                    {getChatName(selectedChat)}
+                                </h3>
+                                {/* Online status placeholder - can be implemented with sockets */}
                             </div>
                         </div>
-                    ))}
-                </div>
 
-                {/* Input */}
-                <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                            placeholder="Type your reply..."
-                            value={message}
-                            onChange={(e) => setMessage(e.target.value)}
-                        />
-                        <button
-                            type="submit"
-                            className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-colors"
-                        >
-                            <Send className="w-5 h-5" />
-                        </button>
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            {loadingMessages ? (
+                                <div className="flex justify-center p-4">
+                                    <Loader2 className="animate-spin text-gray-400" />
+                                </div>
+                            ) : messages.length === 0 ? (
+                                <div className="text-center text-gray-500 mt-10">No messages yet.</div>
+                            ) : (
+                                messages.map((msg) => {
+                                    // Determine if message is mine
+                                    // msg.sender might be populated object or just ID
+                                    const isMe = (msg.sender?._id === user?._id) || (msg.sender === user?._id);
+
+                                    return (
+                                        <div key={msg._id || msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-[70%] p-3 rounded-2xl ${isMe
+                                                    ? 'bg-blue-600 text-white rounded-br-none'
+                                                    : 'bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-bl-none shadow-sm'
+                                                }`}>
+                                                <p className="text-sm">{msg.content}</p>
+                                                <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-blue-100' : 'text-gray-400'}`}>
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        {/* Input */}
+                        <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-gray-800 border-t dark:border-gray-700">
+                            <div className="flex gap-2">
+                                <input
+                                    type="text"
+                                    className="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+                                    placeholder="Type your reply..."
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={!newMessage.trim()}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Send className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </form>
+                    </>
+                ) : (
+                    <div className="flex-1 flex items-center justify-center text-gray-500">
+                        Select a chat to start messaging
                     </div>
-                </form>
+                )}
             </div>
         </div>
     );

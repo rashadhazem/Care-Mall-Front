@@ -13,6 +13,7 @@ const AdminUsers = () => {
     const { t } = useTranslation();
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState(null);
     const [formData, setFormData] = useState({ name: '', email: '', role: 'user', password: '' });
@@ -36,9 +37,21 @@ const AdminUsers = () => {
         }
     };
 
+    const [searchQuery, setSearchQuery] = useState('');
+
     useEffect(() => {
         fetchUsers(currentPage);
     }, [currentPage]);
+
+    // Client-side filtering for users (since API might not support keyword search on this endpoint yet)
+    const filteredUsers = React.useMemo(() => {
+        if (!searchQuery.trim()) return users;
+        const q = searchQuery.toLowerCase();
+        return users.filter(u =>
+            u.name?.toLowerCase().includes(q) ||
+            u.email?.toLowerCase().includes(q)
+        );
+    }, [users, searchQuery]);
 
     const handleOpenModal = (user = null) => {
         if (user) {
@@ -69,6 +82,7 @@ const AdminUsers = () => {
         }
 
         try {
+            setSaving(true);
             if (editingUser) {
                 const updateData = { ...formData };
                 if (!updateData.password) delete updateData.password;
@@ -94,6 +108,8 @@ const AdminUsers = () => {
         } catch (error) {
             console.error("Error saving user:", error);
             Swal.fire(t('error'), 'Failed to save user', 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -150,8 +166,8 @@ const AdminUsers = () => {
         {
             header: t('role'), accessor: 'role', render: (u) => (
                 <span className={`px-2 py-1 rounded-full text-xs font-semibold uppercase ${u.role === 'admin' ? 'bg-purple-100 text-purple-700' :
-                        u.role === 'vendor' ? 'bg-orange-100 text-orange-700' :
-                            'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    u.role === 'vendor' ? 'bg-orange-100 text-orange-700' :
+                        'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
                     }`}>
                     {u.role}
                 </span>
@@ -199,6 +215,8 @@ const AdminUsers = () => {
                             type="text"
                             placeholder={t('search_placeholder')}
                             className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
@@ -210,7 +228,7 @@ const AdminUsers = () => {
 
             <AdminTable
                 columns={columns}
-                data={users}
+                data={filteredUsers}
                 actions={actions}
                 currentPage={currentPage}
                 totalPages={totalPages}
@@ -223,8 +241,8 @@ const AdminUsers = () => {
                 title={editingUser ? t('edit_user') : t('add_user')}
                 footer={
                     <>
-                        <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
-                        <Button onClick={handleSave}>{editingUser ? t('save') : t('add_new')}</Button>
+                        <Button variant="ghost" onClick={handleCloseModal} disabled={saving}>{t('cancel')}</Button>
+                        <Button onClick={handleSave} isLoading={saving}>{editingUser ? t('save') : t('add_new')}</Button>
                     </>
                 }
             >

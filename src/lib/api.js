@@ -4,7 +4,7 @@ import { clearCart } from '../store/slices/cartSlice';
 // Create axios instance
 const api = axios.create({
   baseURL: 'http://localhost:8000/api/v1',
-  timeout: 60000,
+  timeout: 90000,
 
 });
 api.interceptors.request.use(
@@ -158,6 +158,14 @@ export const categoriesApi = {
 export const statisticsApi = {
   getAdminStatistics: () => api.get('/stats/admin'),
   getVendorStatistics: () => api.get('/stats/vendor'),
+}
+
+export const  chatApi={
+  createChat: (chatData) => api.post('/chats', chatData),//{user1Id,storeId}
+  chatsForloggedUser: () => api.get('/chats'),
+  sendMessage:(messageData)=>api.post('/chats/message',messageData),//{chatId,content}
+  getAllMessages:(chatId)=>api.get(`/chats/messages/${chatId}`),
+    
 }
 
 

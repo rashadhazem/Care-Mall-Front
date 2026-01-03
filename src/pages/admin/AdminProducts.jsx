@@ -14,6 +14,7 @@ const AdminProducts = () => {
     const { t } = useTranslation();
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
 
@@ -41,15 +42,40 @@ const AdminProducts = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
 
+    const [searchQuery, setSearchQuery] = useState('');
+
     useEffect(() => {
-        fetchProducts(currentPage);
+        if (currentPage !== 1) {
+            // If we are not on page 1, let pagination effect handle it or reset?
+            // Since we have a separate search effect, we should be careful.
+            // If currentPage changes, we fetch.
+            fetchProducts(currentPage);
+        } else {
+            // If page is 1, we still fetch.
+            fetchProducts(1);
+        }
         fetchInitialData();
     }, [currentPage]);
+
+    // Search Effect
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (searchQuery) {
+                if (currentPage === 1) fetchProducts(1);
+                else setCurrentPage(1);
+            } else {
+                if (currentPage === 1) fetchProducts(1);
+                else setCurrentPage(1);
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
 
     const fetchInitialData = async () => {
         try {
             const [catsRes, brandsRes] = await Promise.all([
-                categoriesApi.getCategories(1), // Assuming 1 gets enough or implement search later
+                categoriesApi.getCategories(1),
                 brandsApi.getBrands()
             ]);
             setCategories(catsRes.data.data || []);
@@ -62,7 +88,10 @@ const AdminProducts = () => {
     const fetchProducts = async (page = 1) => {
         setLoading(true);
         try {
-            const res = await productsApi.getProducts({ page });
+            const params = { page };
+            if (searchQuery) params.keyword = searchQuery;
+
+            const res = await productsApi.getProducts(params);
             setProducts(res.data.data || []);
             setTotalPages(res.data.paginationResult?.numberOfPages || 1);
             setCurrentPage(res.data.paginationResult?.currentPage || page);
@@ -207,6 +236,7 @@ const AdminProducts = () => {
         }
 
         try {
+            setSaving(true);
             if (editingProduct) {
                 await productsApi.updateProduct(editingProduct._id, fd);
                 Swal.fire(t('updated'), t('product_updated_success'), 'success');
@@ -221,6 +251,8 @@ const AdminProducts = () => {
             // Show detailed error if available
             const msg = error.response?.data?.message || t('failed_to_save_product');
             Swal.fire(t('error'), msg, 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -252,7 +284,7 @@ const AdminProducts = () => {
         {
             header: t('product_title'), accessor: 'title', render: (p) => (
                 <div className="flex items-center gap-3">
-                    <img src={p.imageCover.url } alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
+                    <img src={p.imageCover.url} alt="" className="w-10 h-10 rounded-lg object-cover bg-gray-100" />
                     <div>
                         <p className="font-medium text-gray-900 dark:text-white" title={p.description}>{p.title}</p>
                         <p className="text-xs text-gray-500">{p.category?.name || p.category}</p>
@@ -287,6 +319,8 @@ const AdminProducts = () => {
                             type="text"
                             placeholder={t('search_products_placeholder')}
                             className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
@@ -313,8 +347,8 @@ const AdminProducts = () => {
                     title={editingProduct ? t('edit_product') : t('add_product')}
                     footer={
                         <>
-                            <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
-                            <Button onClick={handleSave}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
+                            <Button variant="ghost" onClick={handleCloseModal} disabled={saving}>{t('cancel')}</Button>
+                            <Button onClick={handleSave} isLoading={saving}>{editingProduct ? t('save_changes') : t('create_product')}</Button>
                         </>
                     }
                     className="max-w-4xl" // Wider modal for more fields

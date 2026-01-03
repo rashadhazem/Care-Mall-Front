@@ -58,7 +58,7 @@ const VerifyPage = () => {
           icon: 'success',
           title: 'OTP verified successfully!',
         });
-        setMessage('OTP verified successfully!');
+       navigate('/login');
       } else {
         Toast.fire({
           icon: 'error',

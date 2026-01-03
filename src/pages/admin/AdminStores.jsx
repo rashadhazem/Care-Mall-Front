@@ -13,6 +13,7 @@ const AdminStores = () => {
     const { t } = useTranslation();
     const [stores, setStores] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingStore, setEditingStore] = useState(null);
     const [vendors, setVendors] = useState([]);
@@ -45,8 +46,10 @@ const AdminStores = () => {
             const res = await usersApi.getUsers();
             // Assuming users API also might be paginated, we might need to fetch all vendors logic separately
             // For now specific to this UI requirement
+            console.log("users", res.data.data);
             const vendorsOnly = (res.data.data || []).filter(u => u.role === 'vendor');
             setVendors(vendorsOnly);
+            console.log("vendor", vendorsOnly);
         } catch (error) {
             console.error("Error fetching vendors:", error);
         }
@@ -101,6 +104,7 @@ const AdminStores = () => {
         }
 
         try {
+            setSaving(true);
             const fd = new FormData();
             fd.append('name', formData.name);
             fd.append('description', formData.description);
@@ -125,6 +129,8 @@ const AdminStores = () => {
         } catch (error) {
             console.error("Error saving store:", error);
             Swal.fire(t('error'), 'Failed to save store', 'error');
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -228,8 +234,8 @@ const AdminStores = () => {
                 title={editingStore ? t('edit_store') : t('add_store')}
                 footer={
                     <>
-                        <Button variant="ghost" onClick={handleCloseModal}>{t('cancel')}</Button>
-                        <Button onClick={handleSave}>{editingStore ? t('save') : t('add_new')}</Button>
+                        <Button variant="ghost" onClick={handleCloseModal} disabled={saving}>{t('cancel')}</Button>
+                        <Button onClick={handleSave} isLoading={saving}>{editingStore ? t('save') : t('add_new')}</Button>
                     </>
                 }
             >
