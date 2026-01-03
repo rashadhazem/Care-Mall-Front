@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { motion } from 'framer-motion';
 import PageWrapper from '../components/ui/PageWrapper';
 import { productsApi, categoriesApi, brandsApi } from '../lib/api';
@@ -11,10 +11,13 @@ import Button from '../components/ui/Button';
 const ProductsPage = () => {
     // State for filters
     const [searchTerm, setSearchTerm] = useState("");
+    const [searchInput, setSearchInput] = useState(""); // local input, apply when user clicks Apply
     const [selectedCategory, setSelectedCategory] = useState(""); // single category for now
     const [selectedBrand, setSelectedBrand] = useState("");
     const [minPrice, setMinPrice] = useState("");
     const [maxPrice, setMaxPrice] = useState("");
+    const [priceMinInput, setPriceMinInput] = useState("");
+    const [priceMaxInput, setPriceMaxInput] = useState("");
     const [sort, setSort] = useState("-createdAt"); // Default sort newer first
 
     // Data State
@@ -52,31 +55,29 @@ const ProductsPage = () => {
         fetchMasterData();
     }, []);
 
-    // Fetch Products when filters or page change
+    // Fetch all products once on mount and apply filters client-side
     useEffect(() => {
-        fetchProducts();
-    }, [currentPage, selectedCategory, selectedBrand, sort, minPrice, maxPrice, searchTerm]);
+        fetchAllProducts();
+    }, []);
 
-    const fetchProducts = async () => {
+    const fetchAllProducts = async () => {
         setLoading(true);
         try {
-            const params = {
-                page: currentPage,
-                sort,
-            };
+            // Fetch first page to learn pagination info
+            const res = await productsApi.getProducts({ page: 1 });
+            let all = res.data.data || [];
 
-            if (searchTerm) params.keyword = searchTerm;
-            if (selectedCategory) params.category = selectedCategory;
-            if (selectedBrand) params.brand = selectedBrand;
-            if (minPrice) params['price[gte]'] = minPrice;
-            if (maxPrice) params['price[lte]'] = maxPrice;
-
-            const response = await productsApi.getProducts(params);
-
-            setProducts(response.data.data || []);
-            if (response.data.paginationResult) {
-                setTotalPages(response.data.paginationResult.numberOfPages || 1);
+            const pagination = res.data.paginationResult;
+            if (pagination && pagination.numberOfPages && pagination.numberOfPages > 1) {
+                const pages = [];
+                for (let p = 2; p <= pagination.numberOfPages; p++) pages.push(p);
+                const rest = await Promise.all(pages.map(pg => productsApi.getProducts({ page: pg })));
+                rest.forEach(r => {
+                    all = all.concat(r.data.data || []);
+                });
             }
+
+            setProducts(all);
         } catch (error) {
             console.error('Error fetching products:', error);
             showToast('error', 'Failed to load products');
@@ -86,12 +87,100 @@ const ProductsPage = () => {
         }
     };
 
+    // Client-side filtered products
+    const pageSize = 12; // items per page for client-side pagination
+
+    const filteredProducts = useMemo(() => {
+        let result = Array.isArray(products) ? [...products] : [];
+
+        // Search
+        if (searchTerm) {
+            const q = searchTerm.toLowerCase();
+            result = result.filter(p => (
+                (p.title || p.name || '').toString().toLowerCase().includes(q) ||
+                (p.description || '').toString().toLowerCase().includes(q)
+            ));
+        }
+
+        // Category
+        if (selectedCategory) {
+            result = result.filter(p => {
+                const catId = p.category?._id || p.category;
+                return String(catId) === String(selectedCategory);
+            });
+        }
+
+        // Brand
+        if (selectedBrand) {
+            result = result.filter(p => {
+                const brandId = p.brand?._id || p.brand;
+                return String(brandId) === String(selectedBrand);
+            });
+        }
+
+        // Price range
+        if (minPrice !== '' && minPrice !== null && minPrice !== undefined) {
+            result = result.filter(p => Number(p.price) >= Number(minPrice));
+        }
+        if (maxPrice !== '' && maxPrice !== null && maxPrice !== undefined) {
+            result = result.filter(p => Number(p.price) <= Number(maxPrice));
+        }
+
+        // Sorting
+        switch (sort) {
+            case 'price':
+                result.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0));
+                break;
+            case '-price':
+                result.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0));
+                break;
+            case '-sold':
+                result.sort((a, b) => (Number(b.sold) || 0) - (Number(a.sold) || 0));
+                break;
+            case '-createdAt':
+            default:
+                result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        }
+
+        return result;
+    }, [products, searchTerm, selectedCategory, selectedBrand, minPrice, maxPrice, sort]);
+
+    // Update pagination when filtered results change
+    useEffect(() => {
+        const pages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+        setTotalPages(pages);
+        if (currentPage > pages) setCurrentPage(1);
+    }, [filteredProducts]);
+
+    const displayedProducts = useMemo(() => {
+        const start = (currentPage - 1) * pageSize;
+        return filteredProducts.slice(start, start + pageSize);
+    }, [filteredProducts, currentPage]);
+
+    const applyFilters = () => {
+        // Validate min/max
+        const min = priceMinInput === '' ? '' : Number(priceMinInput);
+        const max = priceMaxInput === '' ? '' : Number(priceMaxInput);
+        if (min !== '' && max !== '' && !Number.isNaN(min) && !Number.isNaN(max) && min > max) {
+            showToast('error', 'Min price cannot be greater than max price');
+            return;
+        }
+        setSearchTerm(searchInput.trim());
+        setMinPrice(min === '' ? '' : min);
+        setMaxPrice(max === '' ? '' : max);
+        setCurrentPage(1);
+        setMobileFiltersOpen(false);
+    };
+
     const handleClearFilters = () => {
         setSearchTerm("");
+        setSearchInput("");
         setSelectedCategory("");
         setSelectedBrand("");
         setMinPrice("");
         setMaxPrice("");
+        setPriceMinInput("");
+        setPriceMaxInput("");
         setSort("-createdAt");
         setCurrentPage(1);
     };
@@ -109,7 +198,7 @@ const ProductsPage = () => {
                     <Button variant="outline" onClick={() => setMobileFiltersOpen(true)} className="flex items-center gap-2">
                         <Filter size={18} /> Filters
                     </Button>
-                    <span className="text-sm text-gray-500">{products.length} Products found</span>
+                    <span className="text-sm text-gray-500">{filteredProducts.length} Products found</span>
                 </div>
 
                 {/* Sidebar Filters */}
@@ -134,8 +223,9 @@ const ProductsPage = () => {
                                 <input
                                     type="text"
                                     placeholder="Search keyword..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    value={searchInput}
+                                    onChange={(e) => setSearchInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') applyFilters(); }}
                                     className="w-full px-3 py-2 border rounded-lg dark:bg-gray-800 dark:border-gray-700"
                                 />
                             </div>
@@ -207,16 +297,16 @@ const ProductsPage = () => {
                                     <input
                                         type="number"
                                         placeholder="Min"
-                                        value={minPrice}
-                                        onChange={(e) => setMinPrice(e.target.value)}
+                                        value={priceMinInput}
+                                        onChange={(e) => setPriceMinInput(e.target.value)}
                                         className="w-20 px-2 py-1 border rounded text-sm dark:bg-gray-800 dark:border-gray-700"
                                     />
                                     <span className="text-gray-400">-</span>
                                     <input
                                         type="number"
                                         placeholder="Max"
-                                        value={maxPrice}
-                                        onChange={(e) => setMaxPrice(e.target.value)}
+                                        value={priceMaxInput}
+                                        onChange={(e) => setPriceMaxInput(e.target.value)}
                                         className="w-20 px-2 py-1 border rounded text-sm dark:bg-gray-800 dark:border-gray-700"
                                     />
                                 </div>
@@ -224,9 +314,14 @@ const ProductsPage = () => {
 
                             {/* Actions */}
                             <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-3">
-                                <Button variant="outline" className="w-full" onClick={handleClearFilters}>
-                                    Clear Filters
-                                </Button>
+                                <div className="flex gap-2">
+                                    <Button className="flex-1" onClick={applyFilters}>
+                                        Apply Filters
+                                    </Button>
+                                    <Button variant="outline" className="flex-1" onClick={handleClearFilters}>
+                                        Clear Filters
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -244,7 +339,7 @@ const ProductsPage = () => {
                 <main className="flex-1">
                     {/* Header: Sort & Results Count (Desktop) */}
                     <div className="hidden lg:flex justify-between items-center mb-6">
-                        <p className="text-gray-500">Showing {products.length} results</p>
+                        <p className="text-gray-500">Showing {filteredProducts.length} results</p>
                         <div className="flex items-center gap-2">
                             <SlidersHorizontal size={18} className="text-gray-500" />
                             <select
@@ -270,9 +365,9 @@ const ProductsPage = () => {
                     ) : (
                         <>
                             {/* Products Grid */}
-                            {products.length > 0 ? (
+                            {filteredProducts.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                    {products.map(p => (
+                                    {displayedProducts.map(p => (
                                         <ProductCard key={p._id} product={p} />
                                     ))}
                                 </div>

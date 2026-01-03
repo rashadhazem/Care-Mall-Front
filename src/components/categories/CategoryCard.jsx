@@ -6,7 +6,7 @@ const CategoryCard = ({ category }) => {
             <div className="w-20 h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-transparent group-hover:border-primary-500 transition-all p-1">
                 <div className="w-full h-full rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800">
                     <img
-                        src={category.image}
+                        src={category.image.url}
                         alt={category.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                     />

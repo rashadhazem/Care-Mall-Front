@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect ,useMemo} from 'react';
 import AdminTable from '../../components/admin/AdminTable';
 import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
@@ -17,7 +17,7 @@ const VendorProducts = () => {
     const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
-
+    const [searchQuery, setSearchQuery] = useState('');
     // Form State
     const [formData, setFormData] = useState({
         title: '',
@@ -51,7 +51,9 @@ const VendorProducts = () => {
         try {
             const [catsRes, brandsRes] = await Promise.all([
                 categoriesApi.getCategories(1),
-                brandsApi.getBrands()
+                brandsApi.getBrands(),
+
+
             ]);
             setCategories(catsRes.data.data || []);
             setBrands(brandsRes.data.data || []);
@@ -59,6 +61,16 @@ const VendorProducts = () => {
             console.error("Error fetching initial data:", error);
         }
     };
+ const filteredProducts = useMemo(() => {
+    if (!searchQuery.trim()) return products;
+
+    const q = searchQuery.toLowerCase();
+
+    return products.filter(product =>
+        product.title?.toLowerCase().includes(q) ||
+        product.description?.toLowerCase().includes(q)
+    );
+}, [searchQuery, products]);
 
     const fetchProducts = async (page = 1) => {
         setLoading(true);
@@ -287,6 +299,9 @@ const VendorProducts = () => {
                         <input
                             type="text"
                             placeholder={t('search_products_placeholder')}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') setCurrentPage(1); }}
                             className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-primary-500 outline-none"
                         />
                     </div>
@@ -299,7 +314,7 @@ const VendorProducts = () => {
 
             <AdminTable
                 columns={columns}
-                data={products}
+                data={filteredProducts}
                 actions={actions}
                 isLoading={loading}
                 currentPage={currentPage}

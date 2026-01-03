@@ -6,7 +6,7 @@ const StoreCard = ({ store }) => {
         <div className="flex-shrink-0 w-72 bg-white dark:bg-gray-800 rounded-xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-primary-500 dark:hover:border-primary-500 transition-colors cursor-pointer group">
             <div className="h-32 bg-gray-200 dark:bg-gray-700 relative">
                 <img
-                    src={store.image}
+                    src={store.image.url}
                     alt={store.name}
                     className="w-full h-full object-cover"
                 />
@@ -16,7 +16,7 @@ const StoreCard = ({ store }) => {
                 <div className="absolute -top-10 left-4 rtl:right-4 rtl:left-auto">
                     <div className="w-16 h-16 rounded-xl border-4 border-white dark:border-gray-800 overflow-hidden bg-white shadow-md">
                         <img
-                            src={store.logo}
+                            src={store.image.url}
                             alt={store.name}
                             className="w-full h-full object-cover"
                         />

@@ -150,7 +150,7 @@ const Home = () => {
                     {brands.map((brand) => (
                         <img
                             key={brand.id}
-                            src={brand.logo}
+                            src={brand.image.url}
                             alt={brand.name}
                             className="h-8 md:h-12 w-auto grayscale hover:grayscale-0 transition-all duration-300 dark:invert"
                         />
