@@ -32,6 +32,9 @@ const chatSlice = createSlice({
             state.onlineUsers = action.payload;
         }
     },
+    extraReducers: (builder) => {
+        builder.addCase('auth/logout', () => initialState);
+    }
 });
 
 export const { setActiveConversation, setConversations, addMessage, setMessages, setOnlineUsers } = chatSlice.actions;

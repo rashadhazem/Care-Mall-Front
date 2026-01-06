@@ -40,8 +40,8 @@ const VendorChat = () => {
 
         return () => clearInterval(interval);
     }, [isAuthenticated]);
-       
-    
+
+
     // Fetch all chats for the logged-in vendor
     useEffect(() => {
         const fetchChats = async () => {
@@ -109,6 +109,23 @@ const VendorChat = () => {
             socketService.off('newMessage', handleReceive);
         };
     }, [selectedChat]);
+
+    // Separate effect for global chat events (new chat creation) across the component
+    useEffect(() => {
+        const handleNewChat = (newChat) => {
+            setChats((prev) => {
+                // Prevent duplicates
+                if (prev.some(c => c._id === newChat._id)) return prev;
+                return [newChat, ...prev];
+            });
+        };
+
+        socketService.on('newChat', handleNewChat);
+
+        return () => {
+            socketService.off('newChat', handleNewChat);
+        };
+    }, []);
 
     // Scroll to bottom
     useEffect(() => {

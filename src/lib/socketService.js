@@ -7,15 +7,22 @@ class SocketService {
     socket = null;
     isConnected = false;
     connectionPromise = null;
+    currentAccessToken = null;
 
     connect(url, token) {
-        // Return existing connection promise if connecting
-        if (this.connectionPromise) {
+        // Return existing connection promise if connecting and token matches
+        if (this.connectionPromise && this.currentAccessToken === token) {
             return this.connectionPromise;
         }
 
-        // Already connected
-        if (this.socket && this.isConnected) {
+        // Check if we need to disconnect first (token changed)
+        if ((this.socket || this.isConnected) && this.currentAccessToken !== token) {
+            console.log('[Socket] Token changed, disconnecting old socket...');
+            this.disconnect();
+        }
+
+        // Already connected with same token
+        if (this.socket && this.isConnected && this.currentAccessToken === token) {
             return Promise.resolve(true);
         }
 
@@ -32,6 +39,8 @@ class SocketService {
         }
 
         console.log('[Socket] Attempting to connect to:', socketUrl);
+
+        this.currentAccessToken = token;
 
         this.connectionPromise = new Promise((resolve) => {
             this.socket = io(socketUrl, {
@@ -141,6 +150,7 @@ class SocketService {
             this.socket.disconnect();
             this.socket = null;
             this.isConnected = false;
+            this.currentAccessToken = null;
         }
     }
 }
