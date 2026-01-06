@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { removeFromCart, updateQuantity, clearCart } from '../store/slices/cartSlice';
+import { fetchCart, removeFromCart, updateCart, clearCart } from '../store/slices/cartThunks';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, MapPin } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { Helmet } from 'react-helmet-async';
@@ -11,8 +11,10 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 
 const CartPage = () => {
-    const { items, totalStruct, cartId } = useSelector((state) => state.cart);
+    const { items, total,totalQuantity,status } = useSelector((state) => state.cart);
+    const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const dispatch = useDispatch();
+    const {cartId} = useSelector((state) => state.cart);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     console.log("items is ",items);
@@ -26,55 +28,41 @@ const CartPage = () => {
         postalCode: ''
     });
     const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' or 'card'
+    const handleQuantityChange = async (itemId, newQuantity) => {
+    if (newQuantity < 1) return;
 
+    try {
+      await dispatch(
+        updateCart({ itemId, quantity: newQuantity })
+      ).unwrap();
+    } catch (err) {
+      Swal.fire("Error", err, "error");
+    }
+  };
     // Sync cart from API on mount
     useEffect(() => {
-        const syncCart = async () => {
-            try {
-                const res = await cartApi.getCart();
-                if (res.data && res.data.data) {
-                    // Dispatch action to update redux state with backend cart
-                    // This assumes your cartSlice has a customized action or you map it here
-                    // For now, if the slice relies on local storage mostly, we might just verify items
-                    // But ideally, we should set the Redux state from the backend
-                }
-            } catch (error) {
-                console.error("Failed to sync cart", error);
-            }
-        };
-        syncCart();
-    }, []);
+  if (isAuthenticated) {
+    dispatch(fetchCart());
+  }
+}, [isAuthenticated]);
 
-    const handleQuantityChange = async (itemId, newQuantity, productId) => {
-        if (newQuantity < 1) return;
-        // Optimistic UI update
-        dispatch(updateQuantity({ id: itemId, quantity: newQuantity }));
+  
 
-        try {
-            await cartApi.updateCartItem(itemId, { count: newQuantity });
-        } catch (error) {
-            console.error("Failed to update quantity on server", error);
-            // Revert on error if needed
-        }
-    };
-
-    const handleRemoveItem = async (itemId) => {
-        dispatch(removeFromCart(itemId));
-        try {
-            await cartApi.removeFromCart(itemId);
-        } catch (error) {
-            console.error("Failed to remove item on server", error);
-        }
-    };
+   const handleRemoveItem = async (itemId) => {
+    try {
+      await dispatch(removeFromCart(itemId)).unwrap();
+    } catch (err) {
+      Swal.fire("Error", err, "error");
+    }
+  };
 
     const handleClearCart = async () => {
-        dispatch(clearCart());
-        try {
-            await cartApi.clearCart();
-        } catch (error) {
-            console.error("Failed to clear cart on server", error);
-        }
-    };
+    try {
+      await dispatch(clearCart()).unwrap();
+    } catch (err) {
+      Swal.fire("Error", err, "error");
+    }
+  };
 
     const handlePlaceOrder = async () => {
         if (!shippingAddress.details || !shippingAddress.phone || !shippingAddress.city) {
@@ -163,14 +151,16 @@ const CartPage = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Cart Items List */}
                 <div className="lg:col-span-2 space-y-4">
-                    {items.map((item) => (
-                        <div key={item.id} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                    {items.map((item, index) => {
+                        const cartItemId = item._id || item.id || (item.product && (item.product._id || item.product)) || index;
+                        return (
+                          <div key={cartItemId} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
                             <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 flex items-center justify-center flex-shrink-0">
-                                <img src={item.imageCover?.url} alt={item.name} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                                <img src={item.product.imageCover?.url} alt={item.product.title} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
                             </div>
 
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.name}</h3>
+                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.product.title}</h3>
                                 {/* <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{item.store}</p> */}
                                 <div className="flex items-center gap-2 text-blue-600 font-bold">
                                     ${item.price.toFixed(2)}
@@ -179,7 +169,7 @@ const CartPage = () => {
 
                             <div className="flex flex-col items-end gap-3">
                                 <button
-                                    onClick={() => handleRemoveItem(item.id)}
+                                    onClick={() => handleRemoveItem(cartItemId)}
                                     className="text-gray-400 hover:text-red-500 transition-colors p-1"
                                 >
                                     <Trash2 className="w-5 h-5" />
@@ -187,14 +177,14 @@ const CartPage = () => {
 
                                 <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg">
                                     <button
-                                        onClick={() => handleQuantityChange(item.id, Math.max(1, item.quantity - 1), item.product)}
+                                        onClick={() => handleQuantityChange(cartItemId, Math.max(1, item.quantity - 1))}
                                         className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg transition"
                                     >
                                         <Minus className="w-3 h-3" />
                                     </button>
                                     <span className="w-8 text-center text-sm font-semibold dark:text-white">{item.quantity}</span>
                                     <button
-                                        onClick={() => handleQuantityChange(item.id, item.quantity + 1, item.product)}
+                                        onClick={() => handleQuantityChange(cartItemId, item.quantity + 1)}
                                         className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg transition"
                                     >
                                         <Plus className="w-3 h-3" />
@@ -202,7 +192,8 @@ const CartPage = () => {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                        );
+                    })}
                 </div>
 
                 {/* Order Summary */}
@@ -213,7 +204,7 @@ const CartPage = () => {
                         <div className="space-y-4 mb-6 border-b dark:border-gray-700 pb-6">
                             <div className="flex justify-between text-gray-600 dark:text-gray-300">
                                 <span>Subtotal</span>
-                                <span>${totalStruct.total.toFixed(2)}</span>
+                                <span>${(total || 0).toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-gray-600 dark:text-gray-300">
                                 <span>Shipping</span>
@@ -221,13 +212,13 @@ const CartPage = () => {
                             </div>
                             {/* <div className="flex justify-between text-gray-600 dark:text-gray-300">
                                 <span>Tax (Estimate)</span>
-                                <span>${(totalStruct.total * 0.1).toFixed(2)}</span>
+                                <span>${((total || 0) * 0.1).toFixed(2)}</span>
                             </div> */}
                         </div>
 
                         <div className="flex justify-between text-xl font-bold mb-8 dark:text-white">
                             <span>Total</span>
-                            <span>${(totalStruct.total).toFixed(2)}</span>
+                            <span>${(total || 0).toFixed(2)}</span>
                         </div>
 
                         <button

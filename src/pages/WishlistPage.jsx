@@ -6,7 +6,7 @@ import Button from '../components/ui/Button';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useDispatch } from 'react-redux';
-import { addToCart as addToCartAction } from '../store/slices/cartSlice';
+import { addToCart, fetchCart } from '../store/slices/cartThunks';
 
 const WishlistPage = () => {
     const { t } = useTranslation();
@@ -56,8 +56,9 @@ const WishlistPage = () => {
 
     const handleAddToCart = async (product) => {
         try {
-            await cartApi.addToCart({ productId: product._id });
-            dispatch(addToCartAction(product)); // Update redux state if needed for UI counters
+            await dispatch(addToCart({ productId: product._id, quantity: 1 })).unwrap();
+            // Refresh cart state after successful add
+            dispatch(fetchCart());
             Swal.fire({
                 title: t('success'),
                 text: t('added_to_cart'),

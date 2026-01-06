@@ -164,7 +164,7 @@ const VendorOrders = () => {
                                                 <td className="px-4 py-3 text-gray-500">{item.color || '-'}</td>
                                                 <td className="px-4 py-3 text-right">${item.price}</td>
                                                 <td className="px-4 py-3 text-center">{item.quantity}</td>
-                                                <td className="px-4 py-3 text-right font-medium">${(item.price * item.count).toFixed(2)}</td>
+                                                <td className="px-4 py-3 text-right font-medium">${(item.price * item.quantity).toFixed(2)}</td>
                                             </tr>
                                         ))}
                                     </tbody>

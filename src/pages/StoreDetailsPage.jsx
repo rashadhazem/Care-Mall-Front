@@ -132,7 +132,7 @@ const StoreDetailsPage = () => {
             {/* Store Header / Banner */}
             <div className="relative h-64 md:h-80 bg-gray-200 dark:bg-gray-800 w-full object-cover">
                 <img
-                    src={store.image || store.logo || '/placeholder-store.jpg'}
+                    src={store.image.url || store.logo || '/placeholder-store.jpg'}
                     alt={store.name}
                     className="w-full h-full object-cover"
                     onError={(e) => { e.target.src = '/placeholder-store.jpg'; }}
@@ -142,7 +142,7 @@ const StoreDetailsPage = () => {
                 <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white flex flex-col md:flex-row items-end md:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <img
-                            src={store.logo || store.image || '/placeholder-logo.jpg'}
+                            src={store.logo?.url || store.image?.url || '/placeholder-logo.jpg'}
                             alt={store.name}
                             className="w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-white dark:border-gray-700 bg-white object-cover"
                             onError={(e) => { e.target.src = '/placeholder-logo.jpg'; }}

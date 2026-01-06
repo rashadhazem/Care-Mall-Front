@@ -15,7 +15,9 @@ const Navbar = () => {
     const { mode } = useSelector((state) => state.theme);
     const { code } = useSelector((state) => state.language);
     const { isAuthenticated, user, role } = useSelector((state) => state.auth);
-    const { items } = useSelector((state) => state.cart);
+     const {totalQuantity , items} = useSelector(
+    (state) => state.cart
+  );
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
     const handleThemeToggle = () => {
@@ -71,12 +73,12 @@ const Navbar = () => {
                             </>
                         )}
 
-                        {(!isAuthenticated || role === 'user') && (
+                        {(isAuthenticated && role === 'user') && (
                             <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 hover:text-primary-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Cart">
                                 <ShoppingCart size={20} />
-                                {items.length > 0 && (
+                                {totalQuantity > 0 && (
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                                        {items.length}
+                                        {totalQuantity}
                                     </span>
                                 )}
                             </Link>

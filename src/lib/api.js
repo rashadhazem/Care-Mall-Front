@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { clearCart } from '../store/slices/cartSlice';
 
 // Create axios instance
 const api = axios.create({

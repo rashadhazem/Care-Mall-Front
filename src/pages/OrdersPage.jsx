@@ -15,6 +15,7 @@ const OrdersPage = () => {
             try {
                 const res = await ordersApi.getOrders();
                 setOrders(res.data.data || []);
+                console.log("orders",res.data.data);
             } catch (error) {
                 console.error("Error fetching orders:", error);
             } finally {
@@ -26,11 +27,22 @@ const OrdersPage = () => {
     }, []);
 
     const getStatusIcon = (status) => {
-        switch (status) { // delivered, shipping, pending, cancelled
-            case 'delivered': return <CheckCircle className="text-green-500" />;
-            case 'shipping': return <Truck className="text-blue-500" />;
-            case 'pending': return <Clock className="text-orange-500" />;
-            default: return <Package className="text-gray-500" />;
+        // switch (status) { // delivered, shipping, pending, cancelled
+        //     case 'delivered': return <CheckCircle className="text-green-500" />;
+        //     case 'shipping': return <Truck className="text-blue-500" />;
+        //     case 'pending': return <Clock className="text-orange-500" />;
+        //     default: return <Package className="text-gray-500" />;
+        // }
+        if(status === true)
+        {
+            return <CheckCircle className="text-green-500" />;
+        }
+        else if(status === false)
+        {
+            return <Clock className="text-orange-500" />;
+        }
+        else{
+            return <Package className="text-gray-500" />;
         }
     };
 
@@ -63,66 +75,135 @@ const OrdersPage = () => {
         );
     }
 
-    return (
-        <div className="container mx-auto px-4 py-8">
-            <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{t('my_orders')}</h1>
+  return (
+    <div className="container mx-auto px-4 py-8">
+        <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
+            {t('my_orders')}
+        </h1>
 
-            <div className="space-y-4">
-                {orders.map((order) => (
-                    <div key={order._id} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
-                        <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">{t('order_placed')}</p>
-                                <p className="font-medium text-gray-900 dark:text-white">
-                                    {new Date(order.createdAt).toLocaleDateString()}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">{t('total_amount')}</p>
-                                <p className="font-bold text-gray-900 dark:text-white">${order.totalOrderPrice}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-500 mb-1">{t('order_number')}</p>
-                                <p className="font-mono text-gray-900 dark:text-white">#{order.id}</p>
-                            </div>
-                            <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-600">
-                                {getStatusIcon(order.status || 'pending')}
-                                <span className="font-medium text-sm capitalize">{getStatusText(order.status || 'pending')}</span>
-                            </div>
+        <div className="space-y-6">
+            {orders.map((order) => (
+                <div
+                    key={order._id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow border border-gray-100 dark:border-gray-700 overflow-hidden"
+                >
+                    {/* ===== Order Header ===== */}
+                    <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900 flex flex-wrap gap-6 justify-between">
+                        <div>
+                            <p className="text-xs text-gray-500">{t('order_number')}</p>
+                            <p className="font-mono text-sm text-gray-900 dark:text-white">
+                                #{order._id}
+                            </p>
                         </div>
 
-                        <div className="p-4 sm:p-6">
-                            <div className="space-y-4">
-                                {order.cartItems?.map((item, index) => (
-                                    <div key={index} className="flex gap-4">
-                                        <img
-                                            src={item.product?.imageCover.url}
-                                            alt={item.product?.title || 'Product'}
-                                            className="w-16 h-16 rounded-lg object-cover bg-gray-100"
-                                        />
-                                        <div className="flex-1">
-                                            <h3 className="font-medium text-gray-900 dark:text-white mb-1">
-                                                {item.product?.title || 'Product Name Unavailable'}
-                                            </h3>
-                                            <p className="text-sm text-gray-500">
-                                                {t('qty')}: {item.count} × ${item.price}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div>
+                            <p className="text-xs text-gray-500">{t('order_placed')}</p>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {new Date(order.createdAt).toLocaleString()}
+                            </p>
+                        </div>
 
-                            {/* <div className="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700 flex justify-end">
-                                <Button variant="outline" size="sm">
-                                    {t('view_details')}
-                                </Button>
-                            </div> */}
+                        <div className="flex items-center gap-2">
+                            <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium
+                                    ${order.isDelivered
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300'
+                                    }`}
+                            >
+                                {order.isDelivered ? t('delivered') : t('pending')}
+                            </span>
+
+                            <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium
+                                    ${order.isPaid
+                                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                                        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+                                    }`}
+                            >
+                                {order.isPaid ? t('paid') : t('not_paid')}
+                            </span>
                         </div>
                     </div>
-                ))}
-            </div>
+
+                    {/* ===== Order Body ===== */}
+                    <div className="p-4 sm:p-6 space-y-6">
+                        {/* Products */}
+                        <div className="space-y-4">
+                            {order.cartItems.map((item, index) => (
+                                <div key={index} className="flex gap-4">
+                                    <img
+                                        src={item.product?.imageCover?.url}
+                                        alt={item.product?.title}
+                                        className="w-16 h-16 rounded-lg object-cover bg-gray-100"
+                                    />
+                                    <div className="flex-1">
+                                        <h3 className="font-medium text-gray-900 dark:text-white">
+                                            {item.product?.title}
+                                        </h3>
+                                        <p className="text-sm text-gray-500">
+                                            {t('qty')}: {item.quantity} × ${item.price}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* ===== Shipping Address ===== */}
+                        <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                            <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                                {t('shipping_address')}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {order.shippingAddress?.details}, {order.shippingAddress?.city}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {t('phone')}: {order.shippingAddress?.phone}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {t('postal_code')}: {order.shippingAddress?.postalCode}
+                            </p>
+                        </div>
+
+                        {/* ===== Payment & Prices ===== */}
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                                    {t('payment_info')}
+                                </h3>
+                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                    {t('method')}: {order.paymentMethodType}
+                                </p>
+                                {order.deliveredAt && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                                        {t('delivered_at')}:{" "}
+                                        {new Date(order.deliveredAt).toLocaleString()}
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-2">
+                                <div className="flex justify-between text-sm">
+                                    <span>{t('tax')}</span>
+                                    <span>${order.taxPrice}</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                    <span>{t('shipping')}</span>
+                                    <span>${order.shippingPrice}</span>
+                                </div>
+                                <div className="flex justify-between font-bold text-lg">
+                                    <span>{t('total')}</span>
+                                    <span>${order.totalOrderPrice}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
-    );
+    </div>
+);
+
 };
 
 export default OrdersPage;

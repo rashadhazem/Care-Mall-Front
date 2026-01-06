@@ -1,58 +1,85 @@
-import { createSlice } from '@reduxjs/toolkit';
+// src/redux/cart/cartSlice.js
+import { createSlice } from "@reduxjs/toolkit";
+import {
+  fetchCart,
+  addToCart,
+  updateCart,
+  removeFromCart,
+  clearCart,
+} from "./cartThunks";
 
-const loadCartFromStorage = () => {
-    try {
-        const serializedCart = localStorage.getItem('mall_cart');
-        if (serializedCart === null) {
-            return { items: [], totalStruct: { total: 0 } };
-        }
-        return JSON.parse(serializedCart);
-    } catch (err) {
-        return { items: [], totalStruct: { total: 0 } };
-    }
+const calculateTotals = (items = []) => {
+  let total = 0;
+  let totalQuantity = 0;
+
+  items.forEach((item) => {
+    total += (item.price || 0) * (item.quantity || 0);
+    totalQuantity += item.quantity || 0;
+  });
+
+  return { total, totalQuantity };
 };
 
-const initialState = loadCartFromStorage();
+const initialState = {
+  cartId:null,
+  items: [],
+  total: 0,
+  totalQuantity: 0, // 👈 Navbar
+  status: "idle",
+};
 
 const cartSlice = createSlice({
-    name: 'cart',
-    initialState,
-    reducers: {
-        addToCart: (state, action) => {
-            const newItem = action.payload;
-            const existingItem = state.items.find(item => item.id === newItem.id);
-
-            if (existingItem) {
-                existingItem.quantity += newItem.quantity || 1;
-            } else {
-                state.items.push({ ...newItem, quantity: newItem.quantity || 1 });
-            }
-
-            state.totalStruct.total = state.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            localStorage.setItem('mall_cart', JSON.stringify(state));
-        },
-        removeFromCart: (state, action) => {
-            const id = action.payload;
-            state.items = state.items.filter(item => item.id !== id);
-            state.totalStruct.total = state.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-            localStorage.setItem('mall_cart', JSON.stringify(state));
-        },
-        updateQuantity: (state, action) => {
-            const { id, quantity } = action.payload;
-            const existingItem = state.items.find(item => item.id === id);
-            if (existingItem && quantity > 0) {
-                existingItem.quantity = quantity;
-                state.totalStruct.total = state.items.reduce((acc, item) => acc + (item.price * item.quantity), 0);
-                localStorage.setItem('mall_cart', JSON.stringify(state));
-            }
-        },
-        clearCart: (state) => {
-            state.items = [];
-            state.totalStruct.total = 0;
-            localStorage.removeItem('mall_cart');
-        },
+  name: "cart",
+  initialState,
+  reducers: {
+    resetCart: (state) => {
+      state.items = [];
+      state.total = 0;
+      state.totalQuantity = 0;
     },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchCart.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCart.fulfilled, (state, action) => {
+        const cart = action.payload || {};
+        state.cartId = cart._id || cart._id;
+        state.items = cart.items || cart.cartItems || [];
+        const totals = calculateTotals(state.items);
+        state.total = totals.total;
+        state.totalQuantity = totals.totalQuantity;
+        state.status = "succeeded";
+      })
+      .addCase(addToCart.fulfilled, (state, action) => {
+        const cart = action.payload || {};
+        state.items = cart.items || cart.cartItems || [];
+        const totals = calculateTotals(state.items);
+        state.total = totals.total;
+        state.totalQuantity = totals.totalQuantity;
+      })
+      .addCase(updateCart.fulfilled, (state, action) => {
+        const cart = action.payload || {};
+        state.items = cart.items || cart.cartItems || [];
+        const totals = calculateTotals(state.items);
+        state.total = totals.total;
+        state.totalQuantity = totals.totalQuantity;
+      })
+      .addCase(removeFromCart.fulfilled, (state, action) => {
+        const cart = action.payload || {};
+        state.items = cart.items || cart.cartItems || [];
+        const totals = calculateTotals(state.items);
+        state.total = totals.total;
+        state.totalQuantity = totals.totalQuantity;
+      })
+      .addCase(clearCart.fulfilled, (state) => {
+        state.items = [];
+        state.total = 0;
+        state.totalQuantity = 0;
+      });
+  },
 });
 
-export const { addToCart, removeFromCart, updateQuantity, clearCart } = cartSlice.actions;
+export const { resetCart } = cartSlice.actions;
 export default cartSlice.reducer;

@@ -17,6 +17,12 @@ const ForgotPassword = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const Toast =Swal.mixin({
+    toast: true,
+    position: "top-end",
+    timer: 3000,
+    showConfirmButton: false,
+  });
 
   /* -------------------- STEP 1: SEND OTP -------------------- */
   const handleSendOtp = async (e) => {
@@ -25,11 +31,26 @@ const ForgotPassword = () => {
 
     try {
       setLoading(true);
-      await authAPI.forgotPassword(email );
-      showToast('OTP sent to your email', 'success');
+      const res = await authAPI.forgotPassword(email);
+      console.log("the res",res);
+      if(res.status==200){
+      Toast.fire({
+        icon: 'success',
+        title: 'OTP sent to your email!',
+      });
       setStep(2);
+    }else{
+      const message= await res.json()
+      Toast.fire({
+        icon: 'error',
+        title: `Failed to send OTP : ${message.message}`,
+      });
+    }
     } catch (err) {
-      showToast(err.response?.data?.message || 'Failed to send OTP', 'error');
+     Toast.fire({
+        icon: 'error',
+        title: 'Failed to send OTP'+ (err.response?.data?.message || ''),
+      });
     } finally {
       setLoading(false);
     }
@@ -43,10 +64,17 @@ const ForgotPassword = () => {
     try {
       setLoading(true);
       await authAPI.verifyRestPasswordOtp({ email, resetCode:otp });
-      showToast('OTP verified successfully', 'success');
+     Toast.fire({
+        icon: 'success',
+        title: 'OTP verified successfully!',
+      });
       setStep(3);
     } catch (err) {
-      showToast(err.response?.data?.message || 'Invalid OTP', 'error');
+      
+     Toast.fire({
+        icon: 'error',
+        title: 'Failed to verify OTP '+ (err.response?.data?.message || ''),
+      });
     } finally {
       setLoading(false);
     }

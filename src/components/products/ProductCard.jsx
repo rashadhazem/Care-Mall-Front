@@ -2,7 +2,7 @@ import React from 'react';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { addToCart } from '../../store/slices/cartSlice';
+import { addToCart } from '../../store/slices/cartThunks';
 import { showToast } from '../../lib/toast';
 import Button from '../ui/Button';
 
@@ -19,16 +19,15 @@ const ProductCard = ({ product }) => {
     const productStore = product.store?.name || product.store || 'Store';
     const productTag = product.tag || (product.priceAfterDiscount ? 'Sale' : null);
 
-    const handleAddToCart = (e) => {
+    const handleAddToCart = async (e) => {
         e.preventDefault();
-        dispatch(addToCart({
-            ...product,
-            id: productId,
-            name: productName,
-            image: productImage,
-            price: productPrice
-        }));
-        showToast('success', 'Product added to cart');
+        try {
+            await dispatch(addToCart({ productId: productId, quantity: 1 })).unwrap();
+            showToast('success', 'Product added to cart');
+        } catch (error) {
+            console.error('Failed adding to cart', error);
+            showToast('error', 'Failed to add product to cart');
+        }
     };
 
     return (

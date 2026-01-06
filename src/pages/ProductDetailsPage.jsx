@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { addToCart } from '../store/slices/cartSlice';
+import { addToCart } from '../store/slices/cartThunks';
 import { productsApi, wishlistApi, cartApi } from '../lib/api';
 import { Star, ShoppingCart, ArrowLeft, Truck, ShieldCheck, Heart, Check, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -60,13 +60,17 @@ const ProductDetailsPage = () => {
             selectedColor
         };
         // Optimistic Redux update
-        dispatch(addToCart(cartItem));
+       
 
         try {
-            await cartApi.addToCart({
-                productId: product._id,
-                color: selectedColor
-            });
+            await dispatch(
+                addToCart({
+                    productId: product._id,
+                    quantity,
+                    color: selectedColor
+                })
+            ).unwrap();
+            
             Swal.fire({
                 icon: 'success',
                 title: 'Added to Cart!',

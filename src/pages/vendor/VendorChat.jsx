@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Send, User, Loader2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { chatApi } from '../../lib/api';
 import { socketService } from '../../lib/socketService';
+import { useTranslation } from 'react-i18next';
 
 const VendorChat = () => {
     const [chats, setChats] = useState([]);
@@ -11,10 +12,12 @@ const VendorChat = () => {
     const [newMessage, setNewMessage] = useState("");
     const [loading, setLoading] = useState(true);
     const [loadingMessages, setLoadingMessages] = useState(false);
+    const { t } = useTranslation();
 
     // Get current user to determine message ownership
     const { user, isAuthenticated } = useSelector(state => state.auth);
     const [isSocketConnected, setIsSocketConnected] = useState(false);
+    const messagesEndRef = useRef(null);
 
     // Ensure socket connection for vendor
     useEffect(() => {
@@ -37,7 +40,8 @@ const VendorChat = () => {
 
         return () => clearInterval(interval);
     }, [isAuthenticated]);
-
+       
+    
     // Fetch all chats for the logged-in vendor
     useEffect(() => {
         const fetchChats = async () => {
@@ -68,11 +72,11 @@ const VendorChat = () => {
         const fetchMessages = async () => {
             setLoadingMessages(true);
             try {
-                const res = await chatApi.getMessages(selectedChat._id);
+                const res = await chatApi.getAllMessages(selectedChat._id);
                 // Assuming res.data.data contains array of messages
                 setMessages(res.data.data || res.data || []);
                 // join socket room for this conversation
-                try { socketService.emit('joinChat', selectedChat._id); } catch (e) { }
+                try { socketService.joinChat(selectedChat._id); } catch (e) { }
             } catch (error) {
                 console.error("Error fetching messages:", error);
             } finally {
@@ -131,9 +135,80 @@ const VendorChat = () => {
         setNewMessage("");
 
         // Send via socket for realtime delivery
-        socketService.sendMessage(selectedChat._id, currentMessage, (response) => {
+        socketService.sendMessage(selectedChat._id, currentMessage, async (response) => {
             if (response?.status !== 'ok') {
                 console.error("Socket sendMessage failed:", response);
+
+                // Special handling: if not authorized, try to create/access chat via API then retry once
+                if (response?.message && response.message.toLowerCase().includes('not authorized')) {
+                    try {
+                        // Try to derive the other participant id (customer)
+                        let otherUserId = null;
+                        if (selectedChat?.participants && Array.isArray(selectedChat.participants)) {
+                            const other = selectedChat.participants.find(p => {
+                                const pId = (p._id || p).toString();
+                                return pId !== (user?._id || '').toString();
+                            });
+                            otherUserId = other ? (other._id || other) : null;
+                        }
+
+                        // Fallback to storeId if we can't find a participant
+                        const storeId = selectedChat?.store?._id || selectedChat?.store || null;
+
+                        if (otherUserId || storeId) {
+                            // Create or get the chat on the server
+                            const createRes = await chatApi.createChat(otherUserId ? { userId: otherUserId } : { storeId });
+                            const newChat = createRes.data || createRes.data?.data || createRes;
+
+                            // Update UI and join room
+                            setSelectedChat(newChat);
+                            try { socketService.joinChat(newChat._id); } catch (e) { }
+
+                            // Fetch messages for the new chat
+                            const msgsRes = await chatApi.getAllMessages(newChat._id);
+                            setMessages(msgsRes.data.data || msgsRes.data || []);
+
+                            // Retry sending once
+                            socketService.sendMessage(newChat._id, currentMessage, (retryRes) => {
+                                if (retryRes?.status !== 'ok') {
+                                    // Remove optimistic message
+                                    setMessages((prev) => prev.filter(m => m._id !== tempId));
+
+                                    // Show error to user
+                                    import('sweetalert2').then(Swal => {
+                                        Swal.default.fire({
+                                            icon: 'error',
+                                            title: t('message_failed'),
+                                            text: retryRes?.message || t('retry_message'),
+                                            toast: true,
+                                            position: 'top-end',
+                                            showConfirmButton: false,
+                                            timer: 3000
+                                        });
+                                    });
+
+                                    // Restore message to input
+                                    setNewMessage(currentMessage);
+                                } else {
+                                    // Success - remove optimistic + append server message if returned
+                                    setMessages((prev) => prev.filter(m => m._id !== tempId));
+                                    const returnedMsg = retryRes?.message || retryRes?.data || null;
+                                    if (returnedMsg) {
+                                        setMessages((prev) => {
+                                            if (prev.some(m => m._id === returnedMsg._id)) return prev;
+                                            return [...prev, returnedMsg];
+                                        });
+                                    }
+                                }
+                            });
+
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Failed to create/access chat after not-authorized error:', err);
+                        // fallthrough to normal error handling below
+                    }
+                }
 
                 // Remove optimistic message
                 setMessages((prev) => prev.filter(m => m._id !== tempId));
@@ -154,8 +229,18 @@ const VendorChat = () => {
                 // Restore message to input
                 setNewMessage(currentMessage);
             } else {
-                // Success - Remove optimistic message, the 'newMessage' socket event will add the real one
+                // Success - Remove optimistic message
                 setMessages((prev) => prev.filter(m => m._id !== tempId));
+
+                // If server returned the saved message in the callback, add it immediately
+                const returnedMsg = response?.message || response?.data || null;
+                if (returnedMsg) {
+                    setMessages((prev) => {
+                        if (prev.some(m => m._id === returnedMsg._id)) return prev;
+                        return [...prev, returnedMsg];
+                    });
+                }
+                // Otherwise we expect the 'newMessage' socket event to add it
             }
         });
     };
@@ -284,6 +369,7 @@ const VendorChat = () => {
                                     );
                                 })
                             )}
+                            <div ref={messagesEndRef} />
                         </div>
 
                         {/* Input */}

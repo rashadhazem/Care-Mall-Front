@@ -69,7 +69,7 @@ const AdminProducts = () => {
         product.description?.toLowerCase().includes(q)
     );
 }, [searchQuery, products]);
-
+console.log("filterd",filteredProducts);
 
     const fetchInitialData = async () => {
         try {

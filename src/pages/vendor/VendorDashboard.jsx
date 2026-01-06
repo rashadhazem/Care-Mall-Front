@@ -54,7 +54,7 @@ const VendorDashboard = () => {
 const stats = statsData && [
     {
       label: t('total_sales'),
-      value: `$${statsData.revenue}`,
+      value: `$${statsData.revenue || 0}`,
       icon: DollarSign,
       color: 'bg-green-100 text-green-600',
     },

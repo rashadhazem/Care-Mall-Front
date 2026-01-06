@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import { chatApi } from '../../lib/api';
 import { socketService } from '../../lib/socketService';
 import Swal from 'sweetalert2';
+import { useTranslation } from 'react-i18next';
 
 const ChatWindow = () => {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,7 @@ const ChatWindow = () => {
     const [messages, setMessages] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sending, setSending] = useState(false);
-
+    const { t } = useTranslation();
     // Get current user
     const { user, isAuthenticated } = useSelector((state) => state.auth);
     const [isSocketConnected, setIsSocketConnected] = useState(false);
@@ -143,10 +144,60 @@ const ChatWindow = () => {
         setSending(true);
 
         // Send via Socket
-        socketService.sendMessage(selectedChat._id, currentMessage, (response) => {
+        socketService.sendMessage(selectedChat._id, currentMessage, async (response) => {
             setSending(false);
             if (response?.status !== 'ok') {
                 console.error("Socket Send Failed:", response);
+
+                // Special handling: if not authorized, try to create/access chat via API then retry once
+                if (response?.message && response.message.toLowerCase().includes('not authorized')) {
+                    try {
+                        // Attempt to ensure chat exists between current user and store
+                        const storeId = selectedChat.store?._id || selectedChat.store || selectedChat._id;
+                        if (storeId) {
+                            const createRes = await chatApi.createChat({ storeId });
+                            const newChat = createRes.data || createRes.data?.data || createRes;
+
+                            // Replace selected chat and fetch messages
+                            setSelectedChat(newChat);
+                            try { socketService.joinChat(newChat._id); } catch (e) { }
+                            const msgsRes = await chatApi.getAllMessages(newChat._id);
+                            setMessages(msgsRes.data.data || msgsRes.data || []);
+
+                            // Retry send once via socket
+                            socketService.sendMessage(newChat._id, currentMessage, (retryRes) => {
+                                if (retryRes?.status !== 'ok') {
+                                    // Remove optimistic message
+                                    setMessages((prev) => prev.filter(m => m._id !== tempId));
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: t('message_failed'),
+                                        text: retryRes?.message || t('retry_message'),
+                                        toast: true,
+                                        position: 'top-end',
+                                        showConfirmButton: false,
+                                        timer: 3000
+                                    });
+                                    setMessage(currentMessage);
+                                } else {
+                                    setMessages((prev) => prev.filter(m => m._id !== tempId));
+                                    const returnedMsg = retryRes?.message || retryRes?.data || null;
+                                    if (returnedMsg) {
+                                        setMessages((prev) => {
+                                            if (prev.some(m => m._id === returnedMsg._id)) return prev;
+                                            return [...prev, returnedMsg];
+                                        });
+                                    }
+                                }
+                            });
+
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Failed to create/access chat after not-authorized error:', err);
+                        // fallthrough to normal error handling below
+                    }
+                }
 
                 // Remove optimistic message
                 setMessages((prev) => prev.filter(m => m._id !== tempId));
