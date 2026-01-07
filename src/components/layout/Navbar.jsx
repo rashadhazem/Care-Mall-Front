@@ -8,7 +8,7 @@ import Button from '../ui/Button';
 import { Moon, Sun, ShoppingCart, Menu, Globe, Heart, Package, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import NotificationDropdown from '../common/NotificationDropdown';
-
+import useDropdown from '../ui/useDropdown';
 const Navbar = () => {
     const { t, i18n } = useTranslation();
     const dispatch = useDispatch();
@@ -20,7 +20,7 @@ const Navbar = () => {
         (state) => state.cart
     );
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-
+    const {ref,open,toggle,close} = useDropdown();
     const handleThemeToggle = () => {
         dispatch(toggleTheme());
     };
@@ -36,7 +36,7 @@ const Navbar = () => {
         navigate('/login');
         setIsMenuOpen(false);
     };
-    const [open, setOpen] = useState(false);
+    
     // Helper to close menu on link click
     const closeMenu = () => setIsMenuOpen(false);
 
@@ -55,16 +55,17 @@ const Navbar = () => {
                     {/* Desktop Menu */}
                     <div className="hidden md:flex items-center space-x-4 space-x-reverse">
 
-                        <Link to="/products" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                            {t('products') || 'Products'}
-                        </Link>
-
-                        <Link to="/stores" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
-                            {t('stores') || 'Stores'}
-                        </Link>
+                        
 
                         {isAuthenticated && role === 'user' && (
                             <>
+                                <Link to="/products" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                                    {t('products') || 'Products'}
+                                </Link>
+
+                                <Link to="/stores" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 px-3 py-2 rounded-md text-sm font-medium">
+                                    {t('stores') || 'Stores'}
+                                </Link>
                                 <Link to="/wishlist" className="text-gray-700 dark:text-gray-200 hover:text-primary-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Wishlist">
                                     <Heart size={20} />
                                 </Link>
@@ -101,11 +102,10 @@ const Navbar = () => {
                         {isAuthenticated ? (
                             <div
                                 className="relative"
-                                onMouseEnter={() => setOpen(true)}
-                                onMouseLeave={() => setOpen(false)}
+                                ref={ref}
                             >
                                 {/* Button */}
-                                <Button variant="ghost" className="flex items-center gap-2">
+                                <Button variant="ghost" onClick={toggle} className="flex items-center gap-2">
                                     <User size={20} />
                                     <span className="hidden lg:inline max-w-[100px] truncate">
                                         {user?.name?.split(" ")?.[0] || "User"}
@@ -118,7 +118,7 @@ const Navbar = () => {
                                         {role === "user" && (
                                             <Link
                                                 to="/profile"
-                                                onClick={() => setOpen(false)}
+                                                onClick={close}
                                                 className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                                             >
                                                 <User className="inline mr-2 w-4 h-4" />
@@ -129,7 +129,7 @@ const Navbar = () => {
                                         {role === "admin" && (
                                             <Link
                                                 to="/admin"
-                                                onClick={() => setOpen(false)}
+                                                onClick={close}
                                                 className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                                             >
                                                 <LayoutDashboard className="inline mr-2 w-4 h-4" />
@@ -140,7 +140,7 @@ const Navbar = () => {
                                         {role === "vendor" && (
                                             <Link
                                                 to="/vendor"
-                                                onClick={() => setOpen(false)}
+                                                onClick={close}
                                                 className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                                             >
                                                 <LayoutDashboard className="inline mr-2 w-4 h-4" />
@@ -151,7 +151,7 @@ const Navbar = () => {
                                         <button
                                             onClick={() => {
                                                 handleLogout();
-                                                setOpen(false);
+                                                close();
                                             }}
                                             className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
                                         >
@@ -182,9 +182,9 @@ const Navbar = () => {
                         {(!isAuthenticated || role === 'user') && (
                             <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 p-2">
                                 <ShoppingCart size={24} />
-                                {items.length > 0 && (
+                                {totalQuantity > 0 && (
                                     <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white transform translate-x-1/4 -translate-y-1/4 bg-red-600 rounded-full">
-                                        {items.length}
+                                        {totalQuantity}
                                     </span>
                                 )}
                             </Link>
