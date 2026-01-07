@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -13,11 +13,14 @@ import {
     Moon,
     Tags,
     Package,
-    UserCog
+    UserCog,
+    Bell
 } from 'lucide-react';
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
+import { fetchNotifications } from '../../store/slices/notificationSlice';
 import Button from '../ui/Button';
+import NotificationManager from '../common/NotificationManager';
 
 const AdminLayout = () => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -25,6 +28,11 @@ const AdminLayout = () => {
     const navigate = useNavigate();
     const { mode } = useSelector(state => state.theme);
     const { user } = useSelector(state => state.auth);
+    const { unreadCount } = useSelector(state => state.notifications);
+
+    useEffect(() => {
+        dispatch(fetchNotifications());
+    }, [dispatch]);
 
     const handleLogout = () => {
         dispatch(logout());
@@ -47,6 +55,7 @@ const AdminLayout = () => {
     return (
 
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex text-gray-900 dark:text-gray-100 transition-colors duration-300">
+            <NotificationManager />
             {/* Sidebar Mobile Overlay */}
             {isSidebarOpen && (
                 <div
@@ -87,6 +96,28 @@ const AdminLayout = () => {
                                 {item.label}
                             </NavLink>
                         ))}
+
+                        {/* Notifications Link */}
+                        <NavLink
+                            to="/admin/notifications"
+                            onClick={() => setIsSidebarOpen(false)}
+                            className={({ isActive }) => `
+                                flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 font-medium
+                                ${isActive
+                                    ? 'bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400'
+                                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700/50'}
+                            `}
+                        >
+                            <div className="flex items-center gap-3">
+                                <Bell size={20} />
+                                <span>Notifications</span>
+                            </div>
+                            {unreadCount > 0 && (
+                                <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                    {unreadCount}
+                                </span>
+                            )}
+                        </NavLink>
                     </nav>
 
                     <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">

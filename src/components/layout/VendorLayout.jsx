@@ -1,25 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, NavLink } from 'react-router-dom';
-import { LayoutDashboard, Sun, Moon, LogOut, Package, ShoppingBag, MessageSquare, Menu, X, User, UserCog } from 'lucide-react';
+import { LayoutDashboard, Sun, Moon, LogOut, Package, ShoppingBag, MessageSquare, Menu, X, User, UserCog, Bell, Tag } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useTranslation } from 'react-i18next'; // Import
 import { logout } from '../../store/slices/authSlice';
 import { toggleTheme } from '../../store/slices/themeSlice';
+import { fetchNotifications } from '../../store/slices/notificationSlice';
 import Button from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { socketService } from '../../lib/socketService';
+import NotificationManager from '../common/NotificationManager';
 
 const VendorLayout = () => {
     const { t } = useTranslation(); // Init
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
+    const { unreadCount } = useSelector((state) => state.notifications);
     const navigate = useNavigate();
     const { mode } = useSelector(state => state.theme);
     const handleLogout = () => {
         dispatch(logout());
         navigate('/login');
     }
+
+    useEffect(() => {
+        dispatch(fetchNotifications());
+    }, [dispatch]);
 
 
     const location = useLocation();
@@ -39,6 +46,7 @@ const VendorLayout = () => {
 
     return (
         <div className="flex h-screen bg-gray-100 dark:bg-gray-900 overflow-hidden">
+            <NotificationManager />
             {/* Mobile Sidebar Overlay */}
             {isSidebarOpen && (
                 <div
@@ -71,6 +79,10 @@ const VendorLayout = () => {
                         <ShoppingBag size={20} />
                         {t('orders')}
                     </Link>
+                    <Link to="/vendor/coupons" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('coupons') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
+                        <Tag size={20} />
+                        Coupons
+                    </Link>
                     <Link to="/vendor/chat" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('chat') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
                         <MessageSquare size={20} />
                         {t('customer_chats')}
@@ -78,6 +90,19 @@ const VendorLayout = () => {
                     <Link to="/vendor/profile" className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${location.pathname.includes('profile') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
                         <UserCog size={20} />
                         {t('myProfile')}
+                    </Link>
+
+                    {/* Notifications Link */}
+                    <Link to="/vendor/notifications" className={`flex items-center justify-between p-3 rounded-lg transition-colors ${location.pathname.includes('notifications') ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-700/50'}`}>
+                        <div className="flex items-center gap-3">
+                            <Bell size={20} />
+                            <span>{t('notifications') || 'Notifications'}</span>
+                        </div>
+                        {unreadCount > 0 && (
+                            <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                {unreadCount}
+                            </span>
+                        )}
                     </Link>
                 </nav>
 

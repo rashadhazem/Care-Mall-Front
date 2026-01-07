@@ -11,13 +11,32 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 
 const CartPage = () => {
-    const { items, total,totalQuantity,status } = useSelector((state) => state.cart);
+    const { items, total, totalQuantity, status, totalPriceAfterDiscount } = useSelector((state) => state.cart);
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
     const dispatch = useDispatch();
-    const {cartId} = useSelector((state) => state.cart);
+    const { cartId } = useSelector((state) => state.cart);
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    console.log("items is ",items);
+    console.log("items is ", items);
+
+    // Coupon State
+    const [couponCode, setCouponCode] = useState('');
+    const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) return;
+        setIsApplyingCoupon(true);
+        try {
+            await cartApi.applyCoupon(couponCode);
+            await dispatch(fetchCart()).unwrap();
+            Swal.fire('Success', 'Coupon applied successfully!', 'success');
+            setCouponCode('');
+        } catch (err) {
+            Swal.fire('Error', err.response?.data?.message || 'Invalid Coupon', 'error');
+        } finally {
+            setIsApplyingCoupon(false);
+        }
+    };
 
     // Checkout State
     const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
@@ -29,40 +48,40 @@ const CartPage = () => {
     });
     const [paymentMethod, setPaymentMethod] = useState('cash'); // 'cash' or 'card'
     const handleQuantityChange = async (itemId, newQuantity) => {
-    if (newQuantity < 1) return;
+        if (newQuantity < 1) return;
 
-    try {
-      await dispatch(
-        updateCart({ itemId, quantity: newQuantity })
-      ).unwrap();
-    } catch (err) {
-      Swal.fire("Error", err, "error");
-    }
-  };
+        try {
+            await dispatch(
+                updateCart({ itemId, quantity: newQuantity })
+            ).unwrap();
+        } catch (err) {
+            Swal.fire("Error", err, "error");
+        }
+    };
     // Sync cart from API on mount
     useEffect(() => {
-  if (isAuthenticated) {
-    dispatch(fetchCart());
-  }
-}, [isAuthenticated]);
+        if (isAuthenticated) {
+            dispatch(fetchCart());
+        }
+    }, [isAuthenticated]);
 
-  
 
-   const handleRemoveItem = async (itemId) => {
-    try {
-      await dispatch(removeFromCart(itemId)).unwrap();
-    } catch (err) {
-      Swal.fire("Error", err, "error");
-    }
-  };
+
+    const handleRemoveItem = async (itemId) => {
+        try {
+            await dispatch(removeFromCart(itemId)).unwrap();
+        } catch (err) {
+            Swal.fire("Error", err, "error");
+        }
+    };
 
     const handleClearCart = async () => {
-    try {
-      await dispatch(clearCart()).unwrap();
-    } catch (err) {
-      Swal.fire("Error", err, "error");
-    }
-  };
+        try {
+            await dispatch(clearCart()).unwrap();
+        } catch (err) {
+            Swal.fire("Error", err, "error");
+        }
+    };
 
     const handlePlaceOrder = async () => {
         if (!shippingAddress.details || !shippingAddress.phone || !shippingAddress.city) {
@@ -98,15 +117,16 @@ const CartPage = () => {
                 });
             } else {
                 // Online Payment
-                const res = await ordersApi.checkOutSession(currentCartId);
-                // Assuming res.data.session.url or similar contains the Stripe/Gateway URL
-                // Verify the exact path in api.js or backend docs. 
-                // Usually it's in data.session.url or just data.url
+                const res = await ordersApi.checkOutSession(currentCartId, { shippingAddress });
+                console.log("Checkout Session Response:", res.data);
+
                 const checkoutUrl = res.data.session?.url || res.data.url;
+
                 if (checkoutUrl) {
-                    window.location.href = checkoutUrl;
+                    window.location.assign(checkoutUrl);
                 } else {
-                    throw new Error("Invalid checkout session URL");
+                    console.error("No URL found in response:", res.data);
+                    throw new Error("Invalid checkout session URL received from server");
                 }
             }
 
@@ -154,44 +174,44 @@ const CartPage = () => {
                     {items.map((item, index) => {
                         const cartItemId = item._id || item.id || (item.product && (item.product._id || item.product)) || index;
                         return (
-                          <div key={cartItemId} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
-                            <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 flex items-center justify-center flex-shrink-0">
-                                <img src={item.product.imageCover?.url} alt={item.product.title} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
-                            </div>
+                            <div key={cartItemId} className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm flex items-center gap-4 transition-all hover:shadow-md">
+                                <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 flex items-center justify-center flex-shrink-0">
+                                    <img src={item.product.imageCover?.url} alt={item.product.title} className="w-full h-full object-contain mix-blend-multiply dark:mix-blend-normal" />
+                                </div>
 
-                            <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.product.title}</h3>
-                                {/* <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{item.store}</p> */}
-                                <div className="flex items-center gap-2 text-blue-600 font-bold">
-                                    ${item.price.toFixed(2)}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{item.product.title}</h3>
+                                    {/* <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">{item.store}</p> */}
+                                    <div className="flex items-center gap-2 text-blue-600 font-bold">
+                                        ${item.price.toFixed(2)}
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-end gap-3">
+                                    <button
+                                        onClick={() => handleRemoveItem(cartItemId)}
+                                        className="text-gray-400 hover:text-red-500 transition-colors p-1"
+                                    >
+                                        <Trash2 className="w-5 h-5" />
+                                    </button>
+
+                                    <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                        <button
+                                            onClick={() => handleQuantityChange(cartItemId, Math.max(1, item.quantity - 1))}
+                                            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg transition"
+                                        >
+                                            <Minus className="w-3 h-3" />
+                                        </button>
+                                        <span className="w-8 text-center text-sm font-semibold dark:text-white">{item.quantity}</span>
+                                        <button
+                                            onClick={() => handleQuantityChange(cartItemId, item.quantity + 1)}
+                                            className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg transition"
+                                        >
+                                            <Plus className="w-3 h-3" />
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-
-                            <div className="flex flex-col items-end gap-3">
-                                <button
-                                    onClick={() => handleRemoveItem(cartItemId)}
-                                    className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                                >
-                                    <Trash2 className="w-5 h-5" />
-                                </button>
-
-                                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                    <button
-                                        onClick={() => handleQuantityChange(cartItemId, Math.max(1, item.quantity - 1))}
-                                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-l-lg transition"
-                                    >
-                                        <Minus className="w-3 h-3" />
-                                    </button>
-                                    <span className="w-8 text-center text-sm font-semibold dark:text-white">{item.quantity}</span>
-                                    <button
-                                        onClick={() => handleQuantityChange(cartItemId, item.quantity + 1)}
-                                        className="p-2 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-r-lg transition"
-                                    >
-                                        <Plus className="w-3 h-3" />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                         );
                     })}
                 </div>
@@ -210,15 +230,40 @@ const CartPage = () => {
                                 <span>Shipping</span>
                                 <span className="text-green-500">Free</span>
                             </div>
-                            {/* <div className="flex justify-between text-gray-600 dark:text-gray-300">
-                                <span>Tax (Estimate)</span>
-                                <span>${((total || 0) * 0.1).toFixed(2)}</span>
-                            </div> */}
+
+                            {/* Coupon Input */}
+                            <div className="flex gap-2 mt-4 pt-4 border-t dark:border-gray-700">
+                                <input
+                                    type="text"
+                                    placeholder="Coupon Code"
+                                    value={couponCode}
+                                    onChange={(e) => setCouponCode(e.target.value)}
+                                    className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 p-2 text-sm bg-transparent dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                                <Button
+                                    size="sm"
+                                    onClick={handleApplyCoupon}
+                                    isLoading={isApplyingCoupon}
+                                    disabled={!couponCode}
+                                    className="whitespace-nowrap"
+                                >
+                                    Apply
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="flex justify-between text-xl font-bold mb-8 dark:text-white">
                             <span>Total</span>
-                            <span>${(total || 0).toFixed(2)}</span>
+                            <div className="text-right">
+                                {totalPriceAfterDiscount ? (
+                                    <>
+                                        <span className="text-sm text-gray-500 line-through mr-2">${(total || 0).toFixed(2)}</span>
+                                        <span className="text-green-600">${totalPriceAfterDiscount}</span>
+                                    </>
+                                ) : (
+                                    <span>${(total || 0).toFixed(2)}</span>
+                                )}
+                            </div>
                         </div>
 
                         <button

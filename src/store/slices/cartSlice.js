@@ -21,9 +21,10 @@ const calculateTotals = (items = []) => {
 };
 
 const initialState = {
-  cartId:null,
+  cartId: null,
   items: [],
   total: 0,
+  totalPriceAfterDiscount: undefined,
   totalQuantity: 0, // 👈 Navbar
   status: "idle",
 };
@@ -50,6 +51,8 @@ const cartSlice = createSlice({
         const totals = calculateTotals(state.items);
         state.total = totals.total;
         state.totalQuantity = totals.totalQuantity;
+        // Check for discount
+        state.totalPriceAfterDiscount = cart.totalPriceAfterDiscount || undefined;
         state.status = "succeeded";
       })
       .addCase(addToCart.fulfilled, (state, action) => {
@@ -58,6 +61,7 @@ const cartSlice = createSlice({
         const totals = calculateTotals(state.items);
         state.total = totals.total;
         state.totalQuantity = totals.totalQuantity;
+        state.totalPriceAfterDiscount = cart.totalPriceAfterDiscount || undefined;
       })
       .addCase(updateCart.fulfilled, (state, action) => {
         const cart = action.payload || {};
@@ -65,6 +69,7 @@ const cartSlice = createSlice({
         const totals = calculateTotals(state.items);
         state.total = totals.total;
         state.totalQuantity = totals.totalQuantity;
+        state.totalPriceAfterDiscount = cart.totalPriceAfterDiscount || undefined;
       })
       .addCase(removeFromCart.fulfilled, (state, action) => {
         const cart = action.payload || {};
@@ -72,11 +77,13 @@ const cartSlice = createSlice({
         const totals = calculateTotals(state.items);
         state.total = totals.total;
         state.totalQuantity = totals.totalQuantity;
+        state.totalPriceAfterDiscount = cart.totalPriceAfterDiscount || undefined;
       })
       .addCase(clearCart.fulfilled, (state) => {
         state.items = [];
         state.total = 0;
         state.totalQuantity = 0;
+        state.totalPriceAfterDiscount = undefined;
       });
   },
 });

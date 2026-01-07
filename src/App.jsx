@@ -26,6 +26,7 @@ import WishlistPage from './pages/WishlistPage';
 import OrdersPage from './pages/OrdersPage';
 import ProfilePage from './pages/ProfilePage';
 import StoreDetailsPage from './pages/StoreDetailsPage';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Vendor Imports
 import VendorLayout from './components/layout/VendorLayout';
@@ -33,6 +34,7 @@ import VendorDashboard from './pages/vendor/VendorDashboard';
 import VendorProducts from './pages/vendor/VendorProducts';
 import VendorOrders from './pages/vendor/VendorOrders';
 import VendorChat from './pages/vendor/VendorChat';
+import VendorCoupons from './pages/vendor/VendorCoupons';
 import ChatWindow from './components/chat/ChatWindow';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -49,10 +51,27 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import { Helmet } from 'react-helmet-async';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 
+import NotificationManager from './components/common/NotificationManager';
+
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { socketService } from './lib/socketService';
+
 // Layout Component
 const Layout = () => {
+    const { isAuthenticated, token } = useSelector(state => state.auth);
+
+    useEffect(() => {
+        if (isAuthenticated && token) {
+            socketService.connect(import.meta.env.VITE_API_URL, token);
+        } else {
+            socketService.disconnect();
+        }
+    }, [isAuthenticated, token]);
+
     return (
         <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300 flex flex-col">
+            <NotificationManager />
             <Navbar />
             <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
                 <Outlet />
@@ -87,6 +106,7 @@ function App() {
                         <Route path="wishlist" element={<WishlistPage />} />
                         <Route path="orders" element={<OrdersPage />} />
                         <Route path="profile" element={<ProfilePage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
                     </Route>
 
                     {/*auth routes*/}
@@ -107,8 +127,10 @@ function App() {
                         <Route path="dashboard" element={<VendorDashboard />} />
                         <Route path="products" element={<VendorProducts />} />
                         <Route path="orders" element={<VendorOrders />} />
+                        <Route path="coupons" element={<VendorCoupons />} />
                         <Route path="chat" element={<VendorChat />} />
                         <Route path="profile" element={<ProfilePage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
                     </Route>
                 </Route>
 
@@ -124,6 +146,7 @@ function App() {
                         <Route path="users" element={<AdminUsers />} />
                         <Route path="brands" element={<AdminBrands />} />
                         <Route path="profile" element={<ProfilePage />} />
+                        <Route path="notifications" element={<NotificationsPage />} />
                     </Route>
                 </Route>
             </Routes>

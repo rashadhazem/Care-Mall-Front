@@ -145,6 +145,20 @@ class SocketService {
         });
     }
 
+    onNotification(cb) {
+        if (this.socket) {
+            this.socket.on('notification', cb);
+        }
+    }
+
+    testNotification(type, cb) {
+        if (!this.socket || !this.isConnected) {
+            console.error('[Socket] Cannot send test notification - not connected');
+            return;
+        }
+        this.socket.emit('testNotification', { type }, cb);
+    }
+
     disconnect() {
         if (this.socket) {
             this.socket.disconnect();

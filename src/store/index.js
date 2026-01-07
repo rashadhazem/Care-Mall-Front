@@ -5,6 +5,7 @@ import languageReducer from './slices/languageSlice';
 import authReducer from './slices/authSlice';
 import cartReducer from './slices/cartSlice';
 import chatReducer from './slices/chatSlice';
+import notificationReducer from './slices/notificationSlice';
 
 export const store = configureStore({
     reducer: {
@@ -13,5 +14,6 @@ export const store = configureStore({
         auth: authReducer,
         cart: cartReducer,
         chat: chatReducer,
+        notifications: notificationReducer,
     },
 });

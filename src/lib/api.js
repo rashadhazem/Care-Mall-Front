@@ -81,7 +81,7 @@ export const ordersApi = {
   getOrderById: (id) => api.get(`/orders/${id}`),
   updateOrderToPaid: (id) => api.put(`/orders/${id}/pay`),
   updateOrderToDelivered: (id) => api.put(`/orders/${id}/deliver`),
-  checkOutSession: (cartId) => api.get(`/orders/checkout-session/${cartId}`),
+  checkOutSession: (cartId, orderData) => api.post(`/orders/checkout-session/${cartId}`, orderData),
 }
 
 export const productsApi = {
@@ -160,12 +160,12 @@ export const statisticsApi = {
   getVendorStatistics: () => api.get('/stats/vendor'),
 }
 
-export const  chatApi={
+export const chatApi = {
   createChat: (chatData) => api.post('/chats', chatData),//{user1Id,storeId}
   chatsForloggedUser: () => api.get('/chats'),
-  sendMessage:(messageData)=>api.post('/chats/message',messageData),//{chatId,content}
-  getAllMessages:(chatId)=>api.get(`/chats/${chatId}/messages`),
-    
+  sendMessage: (messageData) => api.post('/chats/message', messageData),//{chatId,content}
+  getAllMessages: (chatId) => api.get(`/chats/${chatId}/messages`),
+
 }
 
 

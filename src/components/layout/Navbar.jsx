@@ -7,6 +7,7 @@ import { logout } from '../../store/slices/authSlice';
 import Button from '../ui/Button';
 import { Moon, Sun, ShoppingCart, Menu, Globe, Heart, Package, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import NotificationDropdown from '../common/NotificationDropdown';
 
 const Navbar = () => {
     const { t, i18n } = useTranslation();
@@ -15,9 +16,9 @@ const Navbar = () => {
     const { mode } = useSelector((state) => state.theme);
     const { code } = useSelector((state) => state.language);
     const { isAuthenticated, user, role } = useSelector((state) => state.auth);
-     const {totalQuantity , items} = useSelector(
-    (state) => state.cart
-  );
+    const { totalQuantity, items } = useSelector(
+        (state) => state.cart
+    );
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
 
     const handleThemeToggle = () => {
@@ -72,6 +73,8 @@ const Navbar = () => {
                                 </Link>
                             </>
                         )}
+
+                        <NotificationDropdown />
 
                         {(isAuthenticated && role === 'user') && (
                             <Link to="/cart" className="relative text-gray-700 dark:text-gray-200 hover:text-primary-600 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Cart">
@@ -215,6 +218,13 @@ const Navbar = () => {
                                     </Link>
                                 </>
                             )}
+                            {/* Notifications Item for Mobile */}
+                            <div className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800">
+                                <div className="flex items-center justify-between">
+                                    <span>Notifications</span>
+                                    <NotificationDropdown />
+                                </div>
+                            </div>
                             {role === 'admin' && (
                                 <Link to="/admin" onClick={closeMenu} className="block px-3 py-2 rounded-md text-base font-medium text-blue-600 hover:bg-gray-50 dark:hover:bg-gray-800">
                                     Admin Dashboard
