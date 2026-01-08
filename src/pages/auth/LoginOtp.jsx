@@ -22,7 +22,7 @@ const VerifyPage = () => {
 
   const validateOtp = () => {
     if (!otp.trim()) return "OTP is required";
-    if (!/^\d{4}$/.test(otp)) return "OTP must be 4 digits";
+    if (!/^\d{6}$/.test(otp)) return "OTP must be 6 digits";
     return null;
   };
 

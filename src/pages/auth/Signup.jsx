@@ -39,8 +39,8 @@ export default function Signup() {
       return "Invalid email format";
     }
 
-    if (password.length < 5) {
-      return "Password must be at least 5 characters";
+    if (password.length < 8) {
+      return "Password must be at least 8 characters";
     }
     return null;
   };
